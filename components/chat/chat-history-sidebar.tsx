@@ -156,84 +156,91 @@ export function ChatHistorySidebar() {
                     }
                   }}
                 >
-                        <Link href={`/chat/${chat.id}`} className="w-full">
-                          <Button
-                            variant={isActive ? 'secondary' : 'ghost'}
-                            className={cn(
-                              'w-full justify-start gap-2 text-left h-auto py-2 hover:bg-accent hover:text-accent-foreground',
-                              isActive && 'bg-secondary hover:bg-secondary/80'
-                            )}
-                          >
-                            <MessageSquare className="h-4 w-4 shrink-0" />
-                            <div className="flex flex-col items-start gap-1 flex-1 min-w-0 max-w-[140px]">
-                              <span className="truncate text-sm w-full font-medium">{chat.title}</span>
-                              <div className="flex flex-col gap-0.5 w-full">
-                                {chat.model && (
-                                  <ModelBadge model={chat.model} className="text-[10px] max-w-[120px]" />
-                                )}
-                                {chat.updated_at && (
-                                  <span className="text-[10px] text-muted-foreground">
-                                    {formatDate(chat.updated_at)}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </Button>
-                        </Link>
-                      
-                  {isHovered && (
-                    <Popover 
-                      open={openMenuId === chat.id} 
-                      onOpenChange={(open) => {
-                        setOpenMenuId(open ? chat.id : null)
-                        if (!open) {
-                          setHoveredChatId(null)
-                        }
+                  <Link href={`/chat/${chat.id}`} className="w-full">
+                    <Button
+                      variant={isActive ? 'secondary' : 'ghost'}
+                      className={cn(
+                        'w-full justify-start gap-2 text-left h-auto py-2 hover:bg-accent hover:text-accent-foreground',
+                        isActive && 'bg-secondary hover:bg-secondary/80'
+                      )}
+                    >
+                      <MessageSquare className="h-4 w-4 shrink-0" />
+                      <div className="flex flex-col items-start gap-1 flex-1 min-w-0 max-w-[140px]">
+                        <span className="truncate text-sm w-full font-medium">{chat.title}</span>
+                        <div className="flex flex-col gap-0.5 w-full">
+                          {chat.model && (
+                            <ModelBadge model={chat.model} className="text-[10px] max-w-[120px]" />
+                          )}
+                          {chat.updated_at && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {formatDate(chat.updated_at)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Button>
+                  </Link>
+                  
+                  <Popover 
+                    open={openMenuId === chat.id} 
+                    onOpenChange={(open) => {
+                      setOpenMenuId(open ? chat.id : null)
+                      if (!open) {
+                        setHoveredChatId(null)
+                      }
+                    }}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 z-10 transition-opacity",
+                          isHovered || openMenuId === chat.id ? "opacity-100" : "opacity-0"
+                        )}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                        }}
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent 
+                      className="w-48 p-1 z-50" 
+                      align="end" 
+                      side="left"
+                      onClick={(e) => {
+                        e.stopPropagation()
                       }}
                     >
-                      <PopoverTrigger asChild>
+                      <div className="flex flex-col">
                         <Button
                           variant="ghost"
-                          size="icon"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 opacity-100"
+                          className="w-full justify-start gap-2 text-sm"
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
+                            handleCreateChatFrom(chat.id)
                           }}
                         >
-                          <MoreVertical className="h-4 w-4" />
+                          <Copy className="h-4 w-4" />
+                          Create new chat from
                         </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-48 p-1" align="end" side="left">
-                        <div className="flex flex-col">
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-start gap-2 text-sm"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              handleCreateChatFrom(chat.id)
-                            }}
-                          >
-                            <Copy className="h-4 w-4" />
-                            Create new chat from
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-start gap-2 text-sm text-destructive hover:text-destructive"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              handleDeleteChat(chat.id)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  )}
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start gap-2 text-sm text-destructive hover:text-destructive"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            handleDeleteChat(chat.id)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )
             })
