@@ -1,241 +1,208 @@
-# Docker Setup Guide
+# Docker Setup for Ollama UI
 
-This guide explains how to run the Ollama UI using Docker and Docker Compose.
+This guide explains how to run the Ollama UI application using Docker.
 
 ## Prerequisites
 
-- Docker Engine 20.10+
-- Docker Compose V2+
-- (Optional) Ollama installed on host or separate container
+- Docker and Docker Compose installed
+- Supabase CLI installed (`npm install -g supabase`)
+- `.env.local` file configured
 
 ## Quick Start
 
-### 1. Development Mode (with hot reload)
+### Step 1: Start Supabase Locally
+
+First, start Supabase on your host machine:
 
 ```bash
-# Copy environment variables
-cp .env.example .env
-
-# Start Supabase services
 npx supabase start
-
-# Copy the Supabase keys from the output to .env file
-
-# Start development server
-docker-compose -f docker-compose.dev.yml up
 ```
 
-Visit `http://localhost:3000`
+This will start Supabase services and show you the connection details. Keep note of the **anon key**.
 
-### 2. Production Mode
+### Step 2: Set Environment Variable
+
+Create a `.env` file in the project root with your Supabase anon key:
 
 ```bash
-# Copy environment variables
-cp .env.example .env
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+```
 
-# Edit .env and fill in the required values
+You can find this key in the output of `npx supabase start` or in your Supabase dashboard.
 
-# Build and start all services
+### Step 3: Build and Run with Docker
+
+```bash
+# Build and start the app
+docker-compose up --build
+```
+
+The app will be available at **http://localhost:3000**
+
+## Architecture
+
+This Docker setup uses:
+- **Next.js app in Docker**: The application runs in a containerized environment
+- **Supabase on host**: Supabase runs locally on your machine using `npx supabase start`
+- **host.docker.internal**: Docker uses this special DNS name to connect to services on your host machine
+
+## Common Commands
+
+### Start in foreground (see logs)
+```bash
+docker-compose up
+```
+
+### Start in background
+```bash
 docker-compose up -d
+```
 
-# View logs
-docker-compose logs -f
-
-# Stop services
+### Stop the app
+```bash
 docker-compose down
+```
+
+### Rebuild after code changes
+```bash
+docker-compose up --build
+```
+
+### View logs
+```bash
+docker-compose logs -f app
+```
+
+### Stop Supabase (when done)
+```bash
+npx supabase stop
 ```
 
 ## Environment Variables
 
-Create a `.env` file with the following variables:
+The docker-compose.yml uses these environment variables:
 
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+- `NEXT_PUBLIC_SUPABASE_URL`: Automatically set to `http://host.docker.internal:54321` (local Supabase)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Read from your `.env` file
+- `NODE_ENV`: Set to `production`
 
-# Database
-POSTGRES_PASSWORD=your-postgres-password
+## Configuration for Different Supabase Setups
 
-# JWT Secret (32+ characters)
-JWT_SECRET=your-jwt-secret
+### Using Local Supabase (Default)
 
-# Supabase Keys
-SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
+The default configuration connects to local Supabase running on your host machine.
 
-Get these values by running:
-```bash
-npx supabase start
-```
+1. Start Supabase: `npx supabase start`
+2. Run Docker: `docker-compose up --build`
 
-## Services
+### Using Hosted Supabase (Production)
 
-The Docker Compose setup includes:
-
-- **app** (port 3000) - Next.js application
-- **supabase-db** (port 54322) - PostgreSQL database
-- **supabase-auth** (port 54324) - Authentication service
-- **supabase-rest** (port 54321) - REST API
-- **supabase-realtime** (port 54323) - Realtime subscriptions
-- **supabase-storage** (port 54325) - File storage
-- **supabase-inbucket** (port 54326) - Email testing
-
-## Connecting to Ollama
-
-### Option 1: Ollama on Host Machine
-
-If Ollama is running on your host:
-
-```bash
-# Mac/Linux
-http://host.docker.internal:11434
-
-# Linux (alternative)
-http://172.17.0.1:11434
-```
-
-### Option 2: Ollama in Docker
-
-Add to `docker-compose.yml`:
+To use a hosted Supabase instance, update `docker-compose.yml`:
 
 ```yaml
-services:
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    networks:
-      - ollama-network
-    restart: unless-stopped
-
-volumes:
-  ollama-data:
+environment:
+  - NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+  - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
 ```
 
-Then use `http://ollama:11434` as the Ollama host URL in settings.
-
-## Database Migrations
-
-Migrations are automatically applied from `supabase/migrations/` when Supabase starts.
-
-To run migrations manually:
-
-```bash
-# Enter the database container
-docker exec -it supabase-db psql -U postgres
-
-# Or use Supabase CLI
-npx supabase db push
-```
-
-## Useful Commands
-
-```bash
-# View logs
-docker-compose logs -f app
-
-# Restart a service
-docker-compose restart app
-
-# Rebuild after code changes (production)
-docker-compose up -d --build
-
-# Clean up everything
-docker-compose down -v
-
-# Execute command in container
-docker exec -it ollama-ui sh
-```
+Then add the production anon key to your `.env` file.
 
 ## Troubleshooting
 
-### Port Conflicts
+### Cannot connect to Supabase
 
-If ports are already in use, modify the port mappings in `docker-compose.yml`:
+**Problem**: App shows "Failed to connect to Supabase"
 
-```yaml
-ports:
-  - "3001:3000"  # Change left side only
-```
-
-### Database Connection Issues
-
-1. Ensure Supabase services are running:
+**Solutions**:
+1. Make sure Supabase is running: `npx supabase status`
+2. Verify the anon key is correct in your `.env` file
+3. Check if `host.docker.internal` resolves:
    ```bash
-   docker-compose ps
+   docker-compose exec app ping host.docker.internal
    ```
 
-2. Check database logs:
-   ```bash
-   docker-compose logs supabase-db
+### Port already in use
+
+**Problem**: `Error: Port 3000 is already in use`
+
+**Solutions**:
+1. Stop any running Next.js dev server
+2. Change the port in docker-compose.yml:
+   ```yaml
+   ports:
+     - "3001:3000"  # Map host port 3001 to container port 3000
    ```
 
-3. Verify environment variables are set correctly
+### Build fails
 
-### Build Issues
+**Problem**: Docker build fails
 
-```bash
-# Clear Docker cache
-docker system prune -a
+**Solutions**:
+1. Clean Docker cache:
+   ```bash
+   docker-compose down
+   docker system prune -a
+   ```
+2. Rebuild from scratch:
+   ```bash
+   docker-compose build --no-cache
+   docker-compose up
+   ```
 
-# Rebuild from scratch
-docker-compose build --no-cache
-```
+### Slow build times
+
+**Problem**: Docker builds take too long
+
+**Solution**: The Dockerfile uses multi-stage builds and the `.dockerignore` file to optimize build times. Make sure `.dockerignore` is in place.
+
+## Development Workflow
+
+For active development, we recommend:
+
+1. **Without Docker** (faster):
+   ```bash
+   npx supabase start
+   npm run dev
+   ```
+
+2. **With Docker** (production-like):
+   ```bash
+   npx supabase start
+   docker-compose up --build
+   ```
 
 ## Production Deployment
 
-For production deployment:
+For production deployment to services like AWS, GCP, or Azure:
 
-1. Use a proper PostgreSQL instance (not the development one)
-2. Set up proper SSL certificates
-3. Configure a reverse proxy (Nginx/Traefik)
-4. Use environment-specific `.env` files
-5. Enable proper monitoring and logging
+1. Build the Docker image:
+   ```bash
+   docker build -t ollama-ui:latest .
+   ```
 
-## Performance Tuning
+2. Push to your container registry:
+   ```bash
+   docker tag ollama-ui:latest your-registry/ollama-ui:latest
+   docker push your-registry/ollama-ui:latest
+   ```
 
-### Node.js Memory
+3. Set environment variables in your hosting platform:
+   - `NEXT_PUBLIC_SUPABASE_URL`: Your production Supabase URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your production anon key
 
-Adjust in `docker-compose.yml`:
+4. Deploy the container
 
-```yaml
-environment:
-  - NODE_OPTIONS=--max-old-space-size=4096
-```
+## Notes
 
-### Database Connections
-
-Modify in Supabase DB environment:
-
-```yaml
-environment:
-  - POSTGRES_MAX_CONNECTIONS=100
-```
-
-## Backup and Restore
-
-### Backup Database
-
-```bash
-docker exec supabase-db pg_dump -U postgres > backup.sql
-```
-
-### Restore Database
-
-```bash
-cat backup.sql | docker exec -i supabase-db psql -U postgres
-```
+- The app uses Next.js standalone output for optimized Docker images
+- Supabase data persists on your host machine in `./supabase/.branches/`
+- The Docker image is optimized for production with a minimal footprint
+- For development, running locally without Docker is faster due to hot-reload
 
 ## Support
 
-For issues, check:
-- Docker logs: `docker-compose logs`
-- Next.js build logs
-- Supabase documentation: https://supabase.com/docs
-
+If you encounter issues:
+1. Check the logs: `docker-compose logs -f`
+2. Verify Supabase is running: `npx supabase status`
+3. Ensure all environment variables are set correctly
+4. Try rebuilding: `docker-compose up --build --force-recreate`

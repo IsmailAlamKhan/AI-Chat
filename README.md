@@ -360,7 +360,28 @@ npx supabase db reset
 
 ## Docker Deployment
 
-For Docker setup and deployment, see `README.Docker.md`.
+Simplified Docker setup with production build:
+
+```bash
+# Build and start
+docker-compose up --build
+
+# Access the app
+open http://localhost:3000
+```
+
+This will:
+1. Build Next.js for production
+2. Start local Supabase with `npx supabase start`
+3. Run the production server
+
+For detailed Docker instructions, see `README.Docker.md`.
+
+**Note**: For development with hot reload, it's recommended to run locally without Docker:
+```bash
+npx supabase start
+npm run dev
+```
 
 ## License
 

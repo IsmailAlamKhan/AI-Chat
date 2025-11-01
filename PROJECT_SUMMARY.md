@@ -68,9 +68,7 @@ ollama-ui/
 │       ├── 0004_add_user_profiles.sql
 │       └── 0005_setup_avatars_storage.sql
 ├── Dockerfile                 # Production Docker image
-├── Dockerfile.dev             # Development Docker image
-├── docker-compose.yml         # Production Docker setup
-├── docker-compose.dev.yml     # Development Docker setup
+├── docker-compose.yml         # Docker Compose setup
 ├── .env.local                 # Environment variables
 ├── README.md                  # Full documentation
 └── package.json
@@ -399,15 +397,20 @@ All services run locally:
 - Ollama (if installed) on http://localhost:11434
 
 ### Docker Deployment
-Two Docker Compose configurations available:
-- **Development**: Hot reload, local Supabase stack
-  ```bash
-  docker-compose -f docker-compose.dev.yml up
-  ```
-- **Production**: Optimized builds, full Supabase services
-  ```bash
-  docker-compose up
-  ```
+Simplified Docker setup with single configuration:
+- Builds Next.js app for production
+- Uses `npx supabase start` for local Supabase
+- Single `Dockerfile` and `docker-compose.yml`
+
+```bash
+docker-compose up --build
+```
+
+For development with hot reload, run locally:
+```bash
+npx supabase start
+npm run dev
+```
 
 See `README.Docker.md` for detailed Docker instructions.
 
