@@ -208,8 +208,8 @@ export function ChatInput() {
       // Get session token for authentication (needed for both summarization check and auto-title)
       const { data: { session } } = await supabase.auth.getSession()
 
-      // Check if summarization will be triggered (threshold: 20 messages, re-summarize every 20)
-      const SUMMARIZATION_THRESHOLD = 20
+      // Check if summarization will be triggered (threshold: 10 messages, re-summarize every 10)
+      const SUMMARIZATION_THRESHOLD = 10
       const { data: chatData } = await supabase
         .from('chats')
         .select('messages_summarized, title')

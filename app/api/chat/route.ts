@@ -19,7 +19,7 @@ interface ChatRequest {
 }
 
 // Configuration for summarization
-const SUMMARIZATION_THRESHOLD = 20 // Summarize after this many messages
+const SUMMARIZATION_THRESHOLD = 10 // Summarize after this many messages
 const RECENT_MESSAGES_COUNT = 10 // Keep this many recent messages in context
 
 export async function POST(request: NextRequest) {
@@ -88,10 +88,23 @@ export async function POST(request: NextRequest) {
 
     // BLOCKING: Summarize first if needed before processing the message
     if (shouldSummarize) {
-      console.log(`[SUMMARIZATION] Summarizing conversation before response (${messages.length} messages)`)
+      console.log(`[SUMMARIZATION] Summarizing conversation before response (${messages.length} messages, last summary at ${messagesSummarized})`)
 
       try {
-        const summarizeResponse = await fetch(`${request.nextUrl.origin}/api/summarize`, {
+        // Only summarize messages since the last summary
+        // Keep the last RECENT_MESSAGES_COUNT messages unsummarized for context
+        const messagesToSummarize = messages.slice(
+          messagesSummarized, // Start from where last summary ended
+          messages.length - RECENT_MESSAGES_COUNT // End before recent messages
+        )
+
+        // Only summarize if we have messages to summarize (avoid summarizing if all messages are in recent window)
+        if (messagesToSummarize.length <= 0) {
+          console.log(`[SUMMARIZATION] Skipping - not enough messages to summarize (all ${messages.length} messages are in recent window)`)
+        } else {
+          console.log(`[SUMMARIZATION] Summarizing ${messagesToSummarize.length} new messages (from message ${messagesSummarized} to ${messages.length - RECENT_MESSAGES_COUNT})`)
+
+          const summarizeResponse = await fetch(`${request.nextUrl.origin}/api/summarize`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -99,30 +112,33 @@ export async function POST(request: NextRequest) {
           },
           body: JSON.stringify({
             chatId,
-            messages: messages.slice(0, -RECENT_MESSAGES_COUNT), // Summarize all but recent
+            previousSummary: chatData?.summary || '', // Pass previous summary to combine with
+            messages: messagesToSummarize, // Only new messages since last summary
+            totalMessageCount: messages.length, // Total messages in conversation
             ollamaHost: settings.ollamaHost,
             googleApiKey: settings.googleApiKey,
             model,
           }),
         })
 
-        if (!summarizeResponse.ok) {
-          console.error('[SUMMARIZATION] Failed:', await summarizeResponse.text())
-        } else {
-          const summaryResult = await summarizeResponse.json()
-          console.log(`[SUMMARIZATION] Complete: ${summaryResult.messagesSummarized} messages summarized`)
+          if (!summarizeResponse.ok) {
+            console.error('[SUMMARIZATION] Failed:', await summarizeResponse.text())
+          } else {
+            const summaryResult = await summarizeResponse.json()
+            console.log(`[SUMMARIZATION] Complete: ${summaryResult.messagesSummarized} messages summarized`)
 
-          // Reload chat data to get the new summary
-          const { data: updatedChatData } = await supabase
-            .from('chats')
-            .select('summary, summary_up_to_message_id, messages_summarized, system_prompt')
-            .eq('id', chatId)
-            .single()
+            // Reload chat data to get the new summary
+            const { data: updatedChatData } = await supabase
+              .from('chats')
+              .select('summary, summary_up_to_message_id, messages_summarized, system_prompt')
+              .eq('id', chatId)
+              .single()
 
-          if (updatedChatData && chatData !== null) {
-            chatData.summary = updatedChatData.summary
-            chatData.messages_summarized = updatedChatData.messages_summarized
-            chatData.system_prompt = updatedChatData.system_prompt
+            if (updatedChatData && chatData !== null) {
+              chatData.summary = updatedChatData.summary
+              chatData.messages_summarized = updatedChatData.messages_summarized
+              chatData.system_prompt = updatedChatData.system_prompt
+            }
           }
         }
       } catch (error) {

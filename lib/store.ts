@@ -18,6 +18,7 @@ export interface Chat {
   title: string
   model?: string
   created_at: string
+  updated_at?: string  // Last modified date (falls back to created_at)
   summary?: string
   summary_up_to_message_id?: string
   messages_summarized?: number
@@ -75,6 +76,7 @@ interface ChatStore {
   addMessage: (message: Message) => void
   appendStreamToLastMessage: (chunk: string) => void
   createChat: (userId: string, title: string, model?: string) => Promise<string | null>
+  createChatFrom: (sourceChatId: string, userId: string) => Promise<string | null>
   saveMessage: (message: Message) => Promise<void>
   deleteChat: (chatId: string) => Promise<void>
   loadUserPreferences: (userId: string) => Promise<void>
@@ -154,7 +156,13 @@ export const useStore = create<ChatStore>()(
           return
         }
 
-        set({ chats: data || [] })
+        // Map data to include updated_at (use last_summarized_at or created_at)
+        const chatsWithUpdatedAt = (data || []).map(chat => ({
+          ...chat,
+          updated_at: chat.last_summarized_at || chat.created_at,
+        }))
+
+        set({ chats: chatsWithUpdatedAt })
       },
 
       loadMessages: async (chatId: string) => {
@@ -243,6 +251,50 @@ export const useStore = create<ChatStore>()(
         }))
 
         return data.id
+      },
+
+      createChatFrom: async (sourceChatId: string, userId: string) => {
+        const supabase = createClient()
+        
+        // Get the source chat with summary and system prompt
+        const { data: sourceChat, error: fetchError } = await supabase
+          .from('chats')
+          .select('summary, system_prompt, model, title')
+          .eq('id', sourceChatId)
+          .eq('user_id', userId)
+          .single()
+
+        if (fetchError || !sourceChat) {
+          console.error('Error fetching source chat:', fetchError)
+          throw new Error('Source chat not found')
+        }
+
+        // Create new chat with summary and system prompt
+        const newTitle = `${sourceChat.title} (Copy)`
+        const { data: newChat, error: createError } = await supabase
+          .from('chats')
+          .insert([{
+            user_id: userId,
+            title: newTitle,
+            model: sourceChat.model,
+            summary: sourceChat.summary || null,
+            system_prompt: sourceChat.system_prompt || null,
+          }])
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('Error creating chat from source:', createError)
+          return null
+        }
+
+        // Reload chats to get the new chat
+        await get().loadChats(userId)
+
+        // Set as current chat
+        set({ currentChatId: newChat.id })
+
+        return newChat.id
       },
 
       saveMessage: async (message: Message) => {

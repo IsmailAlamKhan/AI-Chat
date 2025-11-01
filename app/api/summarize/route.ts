@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { chatId, messages, ollamaHost, googleApiKey, model } = await req.json();
+    const { chatId, messages, previousSummary, totalMessageCount, ollamaHost, googleApiKey, model } = await req.json();
 
     if (!chatId || !messages || messages.length === 0) {
       return NextResponse.json(
@@ -47,7 +47,26 @@ export async function POST(req: NextRequest) {
       .map((msg: Message) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
       .join('\n\n');
 
-    const summaryPrompt = `Please provide a concise summary of the following conversation. Focus on:
+    // Build prompt that includes previous summary if it exists
+    let summaryPrompt = '';
+    if (previousSummary && previousSummary.trim()) {
+      summaryPrompt = `Previous conversation summary:
+${previousSummary}
+
+New messages to add to the summary:
+${conversationText}
+
+Please provide an updated concise summary that combines the previous summary with the new messages. Focus on:
+1. Main topics discussed
+2. Key questions asked and answers provided
+3. Important decisions or conclusions
+4. Technical details that might be relevant for future messages
+
+Keep the summary factual and comprehensive but concise. Update the previous summary with new information rather than repeating everything.
+
+Updated Summary:`;
+    } else {
+      summaryPrompt = `Please provide a concise summary of the following conversation. Focus on:
 1. Main topics discussed
 2. Key questions asked and answers provided
 3. Important decisions or conclusions
@@ -59,6 +78,7 @@ Conversation:
 ${conversationText}
 
 Summary:`;
+    }
 
     let summary = '';
 
@@ -99,12 +119,15 @@ Summary:`;
 
     // Update the chat with the summary
     const lastMessageId = messages[messages.length - 1].id;
+    // Use totalMessageCount if provided (total messages in conversation), otherwise use messages.length
+    const messagesSummarized = totalMessageCount !== undefined ? totalMessageCount : messages.length;
+    
     const { error: updateError } = await supabase
       .from('chats')
       .update({
         summary,
         summary_up_to_message_id: lastMessageId,
-        messages_summarized: messages.length,
+        messages_summarized: messagesSummarized,
         last_summarized_at: new Date().toISOString(),
       })
       .eq('id', chatId)
@@ -118,7 +141,7 @@ Summary:`;
       );
     }
 
-    return NextResponse.json({ summary, messagesSummarized: messages.length });
+    return NextResponse.json({ summary, messagesSummarized });
   } catch (error) {
     console.error('Summarization error:', error);
     return NextResponse.json(
