@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'edge'
 
 interface TitleRequest {
-  message: string
+  message?: string  // For backward compatibility
+  messages?: Array<{ role: string; content: string }>  // Full conversation context
   model: string
   settings: {
     ollamaHost: string
@@ -20,13 +21,27 @@ export async function POST(request: NextRequest) {
     }
 
     const body: TitleRequest = await request.json()
-    const { message, model, settings } = body
+    const { message, messages, model, settings } = body
 
     console.log('[TITLE GEN] Starting title generation')
     console.log('[TITLE GEN] Original model:', model)
-    console.log('[TITLE GEN] Message preview:', message.slice(0, 100))
+    
+    // Build conversation context for title generation
+    let conversationContext = ''
+    if (messages && messages.length > 0) {
+      // Take first few messages (up to 500 chars) for context
+      const contextMessages = messages.slice(0, Math.min(5, messages.length))
+      conversationContext = contextMessages
+        .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+        .join('\n')
+        .slice(0, 500)
+    } else if (message) {
+      conversationContext = message
+    }
 
-    const prompt = `Generate a short, concise title (max 6 words) for this conversation. Only respond with the title, no quotes or explanations.`
+    console.log('[TITLE GEN] Context preview:', conversationContext.slice(0, 100))
+
+    const prompt = `Based on this conversation, generate a short, concise title (max 6 words) that summarizes the main topic. Only respond with the title, no quotes or explanations.\n\nConversation:\n${conversationContext}`
 
     // Only use Ollama for title generation (Google models with thinking mode are unreliable)
     if (settings.ollamaHost && model.startsWith('ollama/')) {
@@ -36,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // Smart fallback: extract meaningful title from conversation (no AI needed)
     console.log('[TITLE GEN] Using smart text extraction (no AI)')
-    const firstUserMessage = message.split('\n').find(line => line.startsWith('user:'))?.replace('user:', '').trim() || message
+    const firstUserMessage = messages?.[0]?.content || message?.split('\n').find(line => line.startsWith('user:'))?.replace('user:', '').trim() || message || ''
     const title = generateSmartTitle(firstUserMessage)
     console.log('[TITLE GEN] Generated title:', title)
     

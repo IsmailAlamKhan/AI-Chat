@@ -12,7 +12,7 @@ import { useStore } from '@/lib/store'
 import { createClient } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Check, X } from 'lucide-react'
+import { Pencil, Check, X, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Tooltip,
@@ -25,9 +25,10 @@ import { SystemPromptDialog } from '@/components/chat/system-prompt-dialog'
 export default function ChatPage() {
   const params = useParams()
   const chatId = params.chatId as string
-  const { loadMessages, chats, isTitleGenerating, updateChatTitle } = useStore()
+  const { loadMessages, chats, isTitleGenerating, updateChatTitle, messages, selectedModel, settings } = useStore()
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editedTitle, setEditedTitle] = useState('')
+  const [isRegeneratingTitle, setIsRegeneratingTitle] = useState(false)
 
   useEffect(() => {
     if (chatId) {
@@ -67,6 +68,60 @@ export default function ChatPage() {
   const handleCancelEdit = () => {
     setIsEditingTitle(false)
     setEditedTitle('')
+  }
+
+  const handleRegenerateTitle = async () => {
+    if (!chatId || !selectedModel || messages.length === 0) {
+      toast.error('Need messages to generate title')
+      return
+    }
+
+    setIsRegeneratingTitle(true)
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        toast.error('Please sign in')
+        return
+      }
+
+      const titleResponse = await fetch('/api/generate-title', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          messages: messages.slice(0, 10), // Use first 10 messages for context
+          model: selectedModel,
+          settings,
+        }),
+      })
+
+      if (!titleResponse.ok) {
+        throw new Error('Failed to generate title')
+      }
+
+      const { title } = await titleResponse.json()
+      
+      // Update in database
+      const { error } = await supabase
+        .from('chats')
+        .update({ title })
+        .eq('id', chatId)
+
+      if (error) throw error
+
+      // Update local state
+      updateChatTitle(chatId, title)
+      toast.success('Title regenerated')
+    } catch (error) {
+      console.error('Error regenerating title:', error)
+      toast.error('Failed to regenerate title')
+    } finally {
+      setIsRegeneratingTitle(false)
+    }
   }
 
   return (
@@ -114,9 +169,29 @@ export default function ChatPage() {
                 variant="ghost"
                 onClick={handleEditTitle}
                 className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Edit title"
               >
                 <Pencil className="h-3 w-3" />
               </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleRegenerateTitle}
+                      disabled={isRegeneratingTitle || messages.length === 0}
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Regenerate title with AI"
+                    >
+                      <Sparkles className={`h-3 w-3 ${isRegeneratingTitle ? 'animate-pulse' : ''}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Regenerate title with AI</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <SystemPromptDialog chatId={chatId} />
             </div>
           )}

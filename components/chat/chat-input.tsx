@@ -118,6 +118,10 @@ export function ChatInput() {
       // Generate title only for new chats (on first message)
       const generateTitle = async () => {
         try {
+          // Get session for auth
+          const { data: { session } } = await supabase.auth.getSession()
+          if (!session) return
+
           // Get the current chat to check its title
           const { data: chatData } = await supabase
             .from('chats')
@@ -140,10 +144,10 @@ export function ChatInput() {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session?.access_token}`,
+              'Authorization': `Bearer ${session.access_token}`,
             },
             body: JSON.stringify({
-              message: userMessageContent,
+              messages: [{ role: 'user', content: userMessageContent }], // Use message object for consistency
               model: selectedModel,
               settings,
             }),
@@ -201,11 +205,14 @@ export function ChatInput() {
       // Build message history
       const messageHistory = [...messages, userMessage]
 
+      // Get session token for authentication (needed for both summarization check and auto-title)
+      const { data: { session } } = await supabase.auth.getSession()
+
       // Check if summarization will be triggered (threshold: 20 messages, re-summarize every 20)
       const SUMMARIZATION_THRESHOLD = 20
       const { data: chatData } = await supabase
         .from('chats')
-        .select('messages_summarized')
+        .select('messages_summarized, title')
         .eq('id', chatId)
         .single()
       
@@ -220,8 +227,45 @@ export function ChatInput() {
         setIsSummarizing(true)
       }
 
-      // Get session token for authentication
-      const { data: { session } } = await supabase.auth.getSession()
+      // Auto-update title at thresholds (every 20 messages, starting at 20)
+      const TITLE_UPDATE_THRESHOLD = 20
+      const shouldUpdateTitle = messageHistory.length >= TITLE_UPDATE_THRESHOLD &&
+                                messageHistory.length % TITLE_UPDATE_THRESHOLD === 0 &&
+                                chatId // Only for existing chats (not new ones)
+      
+      if (shouldUpdateTitle && session) {
+        console.log('[CHAT INPUT] Auto-updating title at threshold:', messageHistory.length)
+        // Generate title in background (non-blocking)
+        fetch('/api/generate-title', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            messages: messageHistory.slice(0, 10), // Use first 10 messages for context
+            model: selectedModel,
+            settings,
+          }),
+        })
+          .then(async (response) => {
+            if (response.ok) {
+              const { title } = await response.json()
+              // Update in database
+              await supabase
+                .from('chats')
+                .update({ title })
+                .eq('id', chatId)
+              // Update local state
+              updateChatTitle(chatId, title)
+              console.log('[CHAT INPUT] Title auto-updated:', title)
+            }
+          })
+          .catch(err => {
+            console.error('[CHAT INPUT] Failed to auto-update title:', err)
+            // Non-critical, don't show error to user
+          })
+      }
       
       // Stream response
       const response = await fetch('/api/chat', {
