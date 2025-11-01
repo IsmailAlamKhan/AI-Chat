@@ -80,8 +80,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     // Determine if we should trigger summarization
+    // Only trigger at exact multiples of the threshold (20, 40, 60, etc.)
+    const messagesSummarized = chatData?.messages_summarized || 0
     const shouldSummarize = messages.length >= SUMMARIZATION_THRESHOLD &&
-      messages.length > (chatData?.messages_summarized || 0) + SUMMARIZATION_THRESHOLD
+      messages.length % SUMMARIZATION_THRESHOLD === 0 &&
+      messages.length !== messagesSummarized
 
     // BLOCKING: Summarize first if needed before processing the message
     if (shouldSummarize) {

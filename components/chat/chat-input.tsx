@@ -209,8 +209,10 @@ export function ChatInput() {
         .single()
       
       const messagesSummarized = chatData?.messages_summarized || 0
-      const willSummarize = messageHistory.length >= SUMMARIZATION_THRESHOLD && 
-                           messageHistory.length > messagesSummarized + SUMMARIZATION_THRESHOLD
+      // Only trigger at exact multiples of the threshold (20, 40, 60, etc.)
+      const willSummarize = messageHistory.length >= SUMMARIZATION_THRESHOLD &&
+                           messageHistory.length % SUMMARIZATION_THRESHOLD === 0 &&
+                           messageHistory.length !== messagesSummarized
       
       if (willSummarize) {
         console.log('[CHAT INPUT] Summarization will be triggered')
