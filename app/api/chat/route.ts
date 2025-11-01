@@ -2,7 +2,9 @@ import { NextRequest } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { Message } from '@/lib/store'
 
-export const runtime = 'edge'
+// Use Node.js runtime for longer timeouts (Edge has 30s limit)
+export const runtime = 'nodejs'
+export const maxDuration = 300 // 5 minutes max (Vercel Pro plan limit)
 
 interface ChatRequest {
   messages: Message[]
@@ -178,6 +180,10 @@ async function handleOllamaChat(messages: Message[], modelName: string, settings
   // Remove trailing slash from ollamaHost to avoid double slashes
   const ollamaHost = settings.ollamaHost.replace(/\/$/, '')
   
+  console.log('[OLLAMA] Calling:', `${ollamaHost}/api/chat`)
+  console.log('[OLLAMA] Model:', modelName)
+  console.log('[OLLAMA] Messages count:', ollamaMessages.length)
+  
   const response = await fetch(`${ollamaHost}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -191,8 +197,12 @@ async function handleOllamaChat(messages: Message[], modelName: string, settings
     }),
   })
 
+  console.log('[OLLAMA] Response status:', response.status, response.statusText)
+
   if (!response.ok) {
-    throw new Error(`Ollama API error: ${response.statusText}`)
+    const errorText = await response.text()
+    console.error('[OLLAMA] Error response:', errorText)
+    throw new Error(`Ollama API error: ${response.statusText} - ${errorText}`)
   }
 
   // Stream the response
