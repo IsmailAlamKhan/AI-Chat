@@ -3,30 +3,33 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { ChatHistorySidebar } from '@/components/chat/chat-history-sidebar'
 
-export default function Home() {
+export default function ChatLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const router = useRouter()
 
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
+    const checkAuth = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       
-      if (user) {
-        router.push('/chat')
-      } else {
+      if (!user) {
         router.push('/login')
       }
     }
 
-    checkAuthAndRedirect()
+    checkAuth()
   }, [router])
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold">Loading...</h1>
-        </div>
+    <div className="flex h-screen">
+      <ChatHistorySidebar />
+      <div className="flex flex-1 flex-col">{children}</div>
     </div>
   )
 }
+

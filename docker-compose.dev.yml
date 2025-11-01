@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # Development Next.js Application (hot reload)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ollama-ui-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - ollama-network
+    restart: unless-stopped
+
+networks:
+  ollama-network:
+    driver: bridge
+
