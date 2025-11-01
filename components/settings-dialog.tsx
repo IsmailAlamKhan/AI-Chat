@@ -74,43 +74,32 @@ export function SettingsDialog() {
       return
     }
 
-    // Test connections before saving
+    // Test connections before saving (server-side to avoid CORS)
     const toastId = toast.loading('Validating API connections...')
     
     try {
-      // Test Ollama if URL is provided
-      if (localSettings.ollamaHost) {
-        try {
-          const ollamaRes = await fetch(`${localSettings.ollamaHost}/api/tags`, {
-            method: 'GET',
-            signal: AbortSignal.timeout(5000), // 5 second timeout
-          })
-          if (!ollamaRes.ok) {
-            toast.error('Failed to connect to Ollama. Please check the host URL.', { id: toastId })
-            return
-          }
-        } catch (err) {
-          toast.error('Failed to connect to Ollama. Please check the host URL and ensure Ollama is running.', { id: toastId })
+      // Test connections via server-side API
+      if (localSettings.ollamaHost || localSettings.googleApiKey) {
+        const testRes = await fetch('/api/test-connection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ollamaHost: localSettings.ollamaHost,
+            googleApiKey: localSettings.googleApiKey,
+          }),
+        })
+
+        const results = await testRes.json()
+
+        // Check Ollama connection
+        if (localSettings.ollamaHost && !results.ollama.success) {
+          toast.error(`Failed to connect to Ollama: ${results.ollama.error}`, { id: toastId })
           return
         }
-      }
 
-      // Test Google AI if API key is provided
-      if (localSettings.googleApiKey) {
-        try {
-          const googleRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models?key=${localSettings.googleApiKey}`,
-            {
-              method: 'GET',
-              signal: AbortSignal.timeout(5000), // 5 second timeout
-            }
-          )
-          if (!googleRes.ok) {
-            toast.error('Invalid Google AI API key. Please check your key.', { id: toastId })
-            return
-          }
-        } catch (err) {
-          toast.error('Failed to validate Google AI API key. Please check your key.', { id: toastId })
+        // Check Google AI connection
+        if (localSettings.googleApiKey && !results.google.success) {
+          toast.error(`Failed to validate Google AI API key: ${results.google.error}`, { id: toastId })
           return
         }
       }
