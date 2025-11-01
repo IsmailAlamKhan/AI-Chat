@@ -66,11 +66,10 @@ export function SystemPromptDialog({ chatId }: SystemPromptDialogProps) {
       <DialogTrigger asChild>
         <Button
           size="icon"
-          variant="ghost"
-          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+          variant="outline"
           title="Edit system prompt"
         >
-          <Sparkles className="h-3 w-3" />
+          <Sparkles className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">

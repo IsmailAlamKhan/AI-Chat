@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useStore } from '@/lib/store'
 import { createClient } from '@/lib/supabase'
+import { SystemPromptDialog } from '@/components/chat/system-prompt-dialog'
 
 export function ChatInput() {
   const router = useRouter()
@@ -309,7 +310,7 @@ export function ChatInput() {
   }
 
   return (
-    <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 py-[11px]">
+    <div className="border-t bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 px-4 py-[11px]">
       <form onSubmit={handleSubmit} className="space-y-3">
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -358,7 +359,7 @@ export function ChatInput() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
-            className="min-h-[0px] flex-1 resize-none"
+            className="min-h-0 flex-1 resize-none"
             disabled={isLoading}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -376,6 +377,10 @@ export function ChatInput() {
             <Button type="submit" size="icon" disabled={!input.trim() || !selectedModel}>
               <Send className="h-4 w-4" />
             </Button>
+          )}
+          
+          {currentChatId && (
+            <SystemPromptDialog chatId={currentChatId} />
           )}
         </div>
       </form>
