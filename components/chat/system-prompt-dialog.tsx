@@ -88,7 +88,7 @@ export function SystemPromptDialog({ chatId }: SystemPromptDialogProps) {
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
               rows={8}
-              className="resize-none font-mono text-sm"
+              className="resize-none font-mono text-sm max-h-[300px] overflow-y-auto"
             />
             <p className="text-xs text-muted-foreground">
               Leave empty to use default behavior. The system prompt takes priority over other context.

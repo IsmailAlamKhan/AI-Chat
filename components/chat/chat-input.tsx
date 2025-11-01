@@ -359,7 +359,7 @@ export function ChatInput() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
-            className="min-h-0 flex-1 resize-none"
+            className="min-h-0 flex-1 resize-none max-h-[200px] overflow-y-auto"
             disabled={isLoading}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
