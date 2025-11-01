@@ -11,7 +11,9 @@ export async function GET(request: NextRequest) {
   // Fetch Ollama models only if host is provided
   if (ollamaHost) {
     try {
-      const response = await fetch(`${ollamaHost}/api/tags`, {
+      // Remove trailing slash to avoid double slashes
+      const cleanHost = ollamaHost.replace(/\/$/, '')
+      const response = await fetch(`${cleanHost}/api/tags`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       })

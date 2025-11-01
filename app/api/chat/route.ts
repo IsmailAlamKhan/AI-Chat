@@ -175,7 +175,10 @@ async function handleOllamaChat(messages: Message[], modelName: string, settings
     })
   }
 
-  const response = await fetch(`${settings.ollamaHost}/api/chat`, {
+  // Remove trailing slash from ollamaHost to avoid double slashes
+  const ollamaHost = settings.ollamaHost.replace(/\/$/, '')
+  
+  const response = await fetch(`${ollamaHost}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

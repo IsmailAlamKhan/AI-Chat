@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <!-- Solid background -->
+  <rect width="180" height="180" rx="40" fill="#000000"/>
+  
+  <!-- Two overlapping circles (like a chat/conversation) -->
+  <circle cx="73" cy="78" r="34" fill="none" stroke="#ffffff" stroke-width="7"/>
+  <circle cx="107" cy="102" r="34" fill="none" stroke="#a855f7" stroke-width="7"/>
+</svg>
+

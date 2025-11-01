@@ -65,7 +65,9 @@ Summary:`;
     // Try Ollama first if available
     if (ollamaHost) {
       try {
-        const ollamaResponse = await fetch(`${ollamaHost}/api/generate`, {
+        // Remove trailing slash to avoid double slashes
+        const cleanHost = ollamaHost.replace(/\/$/, '')
+        const ollamaResponse = await fetch(`${cleanHost}/api/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -12,7 +12,9 @@ export async function POST(request: NextRequest) {
     // Test Ollama if URL is provided
     if (ollamaHost) {
       try {
-        const ollamaRes = await fetch(`${ollamaHost}/api/tags`, {
+        // Remove trailing slash to avoid double slashes
+        const cleanHost = ollamaHost.replace(/\/$/, '')
+        const ollamaRes = await fetch(`${cleanHost}/api/tags`, {
           method: 'GET',
           signal: AbortSignal.timeout(5000), // 5 second timeout
         })

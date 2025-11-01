@@ -59,7 +59,9 @@ async function generateOllamaTitle(prompt: string, modelName: string, ollamaHost
       throw new Error('Ollama host not configured')
     }
     
-    const response = await fetch(`${ollamaHost}/api/generate`, {
+    // Remove trailing slash to avoid double slashes
+    const cleanHost = ollamaHost.replace(/\/$/, '')
+    const response = await fetch(`${cleanHost}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

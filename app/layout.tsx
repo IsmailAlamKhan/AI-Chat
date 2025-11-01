@@ -21,8 +21,24 @@ const ubuntuMono = Ubuntu_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Chat UI",
-  description: "Modern AI chat interface with Ollama and Google AI",
+  title: {
+    default: "AI Chat",
+    template: "%s | AI Chat"
+  },
+  description: "Modern AI chat interface with Ollama and Google AI. Chat with local and cloud AI models, manage conversations, and get intelligent responses.",
+  keywords: ["AI", "Chat", "Ollama", "Google AI", "Gemini", "LLM", "Chatbot"],
+  authors: [{ name: "Ismail Alam Khan" }],
+  creator: "Ismail Alam Khan",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/apple-icon.svg", type: "image/svg+xml" },
+    ],
+  },
+  manifest: "/manifest.json",
+  themeColor: "#18181b",
 };
 
 export default function RootLayout({
