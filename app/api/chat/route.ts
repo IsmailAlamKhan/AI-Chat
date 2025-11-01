@@ -72,10 +72,10 @@ export async function POST(request: NextRequest) {
       }])
     }
 
-    // Load chat metadata including summary
+    // Load chat metadata including summary and system prompt
     const { data: chatData } = await supabase
       .from('chats')
-      .select('summary, summary_up_to_message_id, messages_summarized')
+      .select('summary, summary_up_to_message_id, messages_summarized, system_prompt')
       .eq('id', chatId)
       .single()
 
@@ -115,13 +115,14 @@ export async function POST(request: NextRequest) {
           // Reload chat data to get the new summary
           const { data: updatedChatData } = await supabase
             .from('chats')
-            .select('summary, summary_up_to_message_id, messages_summarized')
+            .select('summary, summary_up_to_message_id, messages_summarized, system_prompt')
             .eq('id', chatId)
             .single()
 
           if (updatedChatData && chatData !== null) {
             chatData.summary = updatedChatData.summary
             chatData.messages_summarized = updatedChatData.messages_summarized
+            chatData.system_prompt = updatedChatData.system_prompt
           }
         }
       } catch (error) {
@@ -141,8 +142,11 @@ export async function POST(request: NextRequest) {
       console.log(`[SUMMARIZATION] Using summary + last ${RECENT_MESSAGES_COUNT} messages (${messages.length} total)`)
     }
 
-    // Combine user context and summary context
-    const fullContext = summaryContext + userContext
+    // Build system prompt context (highest priority)
+    const systemPromptContext = chatData?.system_prompt ? `${chatData.system_prompt}\n\n` : ''
+    
+    // Combine all context: system prompt > summary > user context
+    const fullContext = systemPromptContext + summaryContext + userContext
 
     // Determine which provider to use
     if (model.startsWith('ollama/')) {

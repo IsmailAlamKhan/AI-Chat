@@ -22,6 +22,7 @@ export interface Chat {
   summary_up_to_message_id?: string
   messages_summarized?: number
   last_summarized_at?: string
+  system_prompt?: string
 }
 
 export interface Settings {
@@ -67,6 +68,7 @@ interface ChatStore {
   setUserProfile: (profile: UserProfile | null) => void
   updateChatTitle: (chatId: string, title: string) => void
   updateChatModel: (chatId: string, model: string) => void
+  updateChatSystemPrompt: (chatId: string, systemPrompt: string) => void
   
   loadChats: (userId: string) => Promise<void>
   loadMessages: (chatId: string) => Promise<void>
@@ -131,6 +133,13 @@ export const useStore = create<ChatStore>()(
             chat.id === chatId ? { ...chat, model } : chat
           ),
         })),
+      
+      updateChatSystemPrompt: (chatId, systemPrompt) =>
+        set((state) => ({
+          chats: state.chats.map((chat) =>
+            chat.id === chatId ? { ...chat, system_prompt: systemPrompt } : chat
+          ),
+        })),
 
       loadChats: async (userId: string) => {
         const supabase = createClient()
@@ -163,10 +172,10 @@ export const useStore = create<ChatStore>()(
           return
         }
 
-        // Load chat to get the model and summary info
+        // Load chat to get the model, summary info, and system prompt
         const { data: chatData, error: chatError } = await supabase
           .from('chats')
-          .select('model, summary, messages_summarized')
+          .select('model, summary, messages_summarized, system_prompt')
           .eq('id', chatId)
           .single()
 
@@ -174,12 +183,17 @@ export const useStore = create<ChatStore>()(
           console.error('Error loading chat:', chatError)
         }
 
-        // Update the chat in the chats array with latest summary info
-        if (chatData && (chatData.summary || chatData.messages_summarized)) {
+        // Update the chat in the chats array with latest summary info and system prompt
+        if (chatData) {
           set((state) => ({
             chats: state.chats.map(chat => 
               chat.id === chatId 
-                ? { ...chat, summary: chatData.summary, messages_summarized: chatData.messages_summarized }
+                ? { 
+                    ...chat, 
+                    summary: chatData.summary, 
+                    messages_summarized: chatData.messages_summarized,
+                    system_prompt: chatData.system_prompt 
+                  }
                 : chat
             )
           }))

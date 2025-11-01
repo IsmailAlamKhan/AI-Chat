@@ -20,6 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { SystemPromptDialog } from '@/components/chat/system-prompt-dialog'
 
 export default function ChatPage() {
   const params = useParams()
@@ -116,6 +117,7 @@ export default function ChatPage() {
               >
                 <Pencil className="h-3 w-3" />
               </Button>
+              <SystemPromptDialog chatId={chatId} />
             </div>
           )}
           {currentChat?.model && (
