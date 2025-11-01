@@ -10,13 +10,25 @@ interface Message {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-    
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Get token from Authorization header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - No token' },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create Supabase client with the token
+    const supabase = await createServerSupabaseClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('[SUMMARIZE AUTH] Error:', authError);
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid token' },
         { status: 401 }
       );
     }

@@ -13,6 +13,12 @@ interface TitleRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    // Simple token check (Edge runtime - limited Supabase functionality)
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body: TitleRequest = await request.json()
     const { message, model, settings } = body
 

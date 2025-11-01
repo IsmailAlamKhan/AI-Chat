@@ -25,12 +25,21 @@ export async function POST(request: NextRequest) {
     const body: ChatRequest = await request.json()
     const { messages, model, chatId, settings } = body
 
-    // Get authenticated user
+    // Get token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response('Unauthorized - No token', { status: 401 })
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+
+    // Create Supabase client with the token
     const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
     if (authError || !user) {
-      return new Response('Unauthorized', { status: 401 })
+      console.error('[AUTH] Error:', authError)
+      return new Response('Unauthorized - Invalid token', { status: 401 })
     }
 
     // Load user profile
@@ -69,19 +78,19 @@ export async function POST(request: NextRequest) {
       .single()
 
     // Determine if we should trigger summarization
-    const shouldSummarize = messages.length >= SUMMARIZATION_THRESHOLD && 
-                            messages.length > (chatData?.messages_summarized || 0) + SUMMARIZATION_THRESHOLD
+    const shouldSummarize = messages.length >= SUMMARIZATION_THRESHOLD &&
+      messages.length > (chatData?.messages_summarized || 0) + SUMMARIZATION_THRESHOLD
 
     // BLOCKING: Summarize first if needed before processing the message
     if (shouldSummarize) {
       console.log(`[SUMMARIZATION] Summarizing conversation before response (${messages.length} messages)`)
-      
+
       try {
         const summarizeResponse = await fetch(`${request.nextUrl.origin}/api/summarize`, {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
-            'Cookie': request.headers.get('Cookie') || '',
+            'Authorization': authHeader || '',
           },
           body: JSON.stringify({
             chatId,
@@ -97,15 +106,15 @@ export async function POST(request: NextRequest) {
         } else {
           const summaryResult = await summarizeResponse.json()
           console.log(`[SUMMARIZATION] Complete: ${summaryResult.messagesSummarized} messages summarized`)
-          
+
           // Reload chat data to get the new summary
           const { data: updatedChatData } = await supabase
             .from('chats')
             .select('summary, summary_up_to_message_id, messages_summarized')
             .eq('id', chatId)
             .single()
-          
-          if (updatedChatData) {
+
+          if (updatedChatData && chatData !== null) {
             chatData.summary = updatedChatData.summary
             chatData.messages_summarized = updatedChatData.messages_summarized
           }
@@ -147,14 +156,14 @@ export async function POST(request: NextRequest) {
 async function handleOllamaChat(messages: Message[], modelName: string, settings: any, userContext?: string) {
   const ollamaMessages = messages.map(msg => {
     const content: any = { role: msg.role, content: msg.content }
-    
+
     // Handle images for vision models
     if (msg.attachments && msg.attachments.length > 0) {
       content.images = msg.attachments
         .filter(att => att.type.startsWith('image/'))
         .map(att => att.data.split(',')[1]) // Extract base64 part
     }
-    
+
     return content
   })
 
@@ -219,7 +228,7 @@ async function handleOllamaChat(messages: Message[], modelName: string, settings
         }
       } finally {
         console.log('[OLLAMA] Stop reason:', stopReason)
-        
+
         // Send stop reason info to client if unusual
         if (stopReason === 'length') {
           const warningMsg = '\n\n⚠️ *Response truncated: Maximum length reached. Try reducing the conversation length or increasing the token limit.*'
@@ -228,7 +237,7 @@ async function handleOllamaChat(messages: Message[], modelName: string, settings
           const warningMsg = `\n\n⚠️ *Response stopped: ${stopReason}*`
           controller.enqueue(encoder.encode(warningMsg))
         }
-        
+
         controller.close()
       }
     },
@@ -251,21 +260,21 @@ async function handleGoogleChat(messages: Message[], modelName: string, settings
   // Convert messages to Google format
   const contents = messages.map(msg => {
     const parts: any[] = []
-    
+
     // Add text content
     if (msg.content) {
       parts.push({ text: msg.content })
     }
-    
+
     // Add images for vision models
     if (msg.attachments && msg.attachments.length > 0) {
       msg.attachments
         .filter(att => att.type.startsWith('image/'))
         .forEach(att => {
-          const [mimeType, base64Data] = att.data.includes(',') 
+          const [mimeType, base64Data] = att.data.includes(',')
             ? [att.type, att.data.split(',')[1]]
             : [att.type, att.data]
-          
+
           parts.push({
             inlineData: {
               mimeType,
@@ -274,7 +283,7 @@ async function handleGoogleChat(messages: Message[], modelName: string, settings
           })
         })
     }
-    
+
     return {
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts,
@@ -352,7 +361,7 @@ async function handleGoogleChat(messages: Message[], modelName: string, settings
                 if (text) {
                   controller.enqueue(encoder.encode(text))
                 }
-                
+
                 // Capture stop reason and metadata
                 const candidate = json.candidates?.[0]
                 if (candidate?.finishReason) {
@@ -370,7 +379,7 @@ async function handleGoogleChat(messages: Message[], modelName: string, settings
       } finally {
         console.log('[GOOGLE AI] Stop reason:', stopReason)
         console.log('[GOOGLE AI] Total tokens:', totalTokens)
-        
+
         // Send stop reason info to client if unusual
         if (stopReason === 'MAX_TOKENS') {
           const warningMsg = '\n\n⚠️ *Response truncated: Maximum token limit reached.*'
@@ -389,7 +398,7 @@ async function handleGoogleChat(messages: Message[], modelName: string, settings
           const warningMsg = `\n\n⚠️ *Response stopped: ${stopReason}*`
           controller.enqueue(encoder.encode(warningMsg))
         }
-        
+
         controller.close()
       }
     },

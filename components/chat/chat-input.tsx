@@ -137,7 +137,10 @@ export function ChatInput() {
           
           const titleResponse = await fetch('/api/generate-title', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`,
+            },
             body: JSON.stringify({
               message: userMessageContent,
               model: selectedModel,
@@ -214,10 +217,16 @@ export function ChatInput() {
         setIsSummarizing(true)
       }
 
+      // Get session token for authentication
+      const { data: { session } } = await supabase.auth.getSession()
+      
       // Stream response
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
         body: JSON.stringify({
           messages: messageHistory,
           model: selectedModel,
