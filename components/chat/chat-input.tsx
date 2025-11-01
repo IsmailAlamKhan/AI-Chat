@@ -23,6 +23,7 @@ export function ChatInput() {
     settings,
     isLoading,
     setIsLoading,
+    setIsSummarizing,
     setCurrentChatId,
     addMessage,
     appendStreamToLastMessage,
@@ -196,6 +197,23 @@ export function ChatInput() {
       // Build message history
       const messageHistory = [...messages, userMessage]
 
+      // Check if summarization will be triggered (threshold: 20 messages, re-summarize every 20)
+      const SUMMARIZATION_THRESHOLD = 20
+      const { data: chatData } = await supabase
+        .from('chats')
+        .select('messages_summarized')
+        .eq('id', chatId)
+        .single()
+      
+      const messagesSummarized = chatData?.messages_summarized || 0
+      const willSummarize = messageHistory.length >= SUMMARIZATION_THRESHOLD && 
+                           messageHistory.length > messagesSummarized + SUMMARIZATION_THRESHOLD
+      
+      if (willSummarize) {
+        console.log('[CHAT INPUT] Summarization will be triggered')
+        setIsSummarizing(true)
+      }
+
       // Stream response
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -208,6 +226,11 @@ export function ChatInput() {
         }),
         signal: controller.signal,
       })
+      
+      // Clear summarization state after API responds
+      if (willSummarize) {
+        setIsSummarizing(false)
+      }
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -270,6 +293,7 @@ export function ChatInput() {
     } finally {
       setAbortController(null)
       setIsLoading(false)
+      setIsSummarizing(false)  // Ensure it's cleared even on error
     }
   }
 

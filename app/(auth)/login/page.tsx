@@ -13,10 +13,12 @@ import { Separator } from '@/components/ui/separator'
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [emailError, setEmailError] = useState('')
   const [passwordError, setPasswordError] = useState('')
+  const [displayNameError, setDisplayNameError] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -42,20 +44,36 @@ export default function LoginPage() {
     return ''
   }
 
+  const validateDisplayName = (name: string) => {
+    if (!name) {
+      return 'Display name is required'
+    }
+    if (name.length < 2) {
+      return 'Display name must be at least 2 characters'
+    }
+    if (name.length > 50) {
+      return 'Display name must be less than 50 characters'
+    }
+    return ''
+  }
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     
     // Clear previous errors
     setEmailError('')
     setPasswordError('')
+    setDisplayNameError('')
 
     // Validate fields
     const emailErr = validateEmail(email)
     const passwordErr = validatePassword(password)
+    const displayNameErr = isSignUp ? validateDisplayName(displayName) : ''
 
-    if (emailErr || passwordErr) {
+    if (emailErr || passwordErr || displayNameErr) {
       setEmailError(emailErr)
       setPasswordError(passwordErr)
+      setDisplayNameError(displayNameErr)
       return
     }
 
@@ -63,11 +81,29 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        // Sign up the user
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
         })
-        if (error) throw error
+        
+        if (signUpError) throw signUpError
+        
+        // Create user profile automatically
+        if (authData.user) {
+          const { error: profileError } = await supabase
+            .from('user_profiles')
+            .insert([{
+              user_id: authData.user.id,
+              display_name: displayName.trim(),
+            }])
+          
+          if (profileError) {
+            console.error('Error creating user profile:', profileError)
+            // Don't throw - the account is created, profile can be added later
+          }
+        }
+        
         toast.success('Account created successfully!')
         router.push('/chat')
       } else {
@@ -100,6 +136,13 @@ export default function LoginPage() {
     }
   }
 
+  const handleDisplayNameChange = (value: string) => {
+    setDisplayName(value)
+    if (displayNameError) {
+      setDisplayNameError(validateDisplayName(value))
+    }
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-8">
@@ -112,6 +155,25 @@ export default function LoginPage() {
 
         <form onSubmit={handleAuth} className="space-y-6">
           <div className="space-y-4">
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="displayName">Display Name</Label>
+                <Input
+                  id="displayName"
+                  type="text"
+                  placeholder="Your name"
+                  value={displayName}
+                  onChange={(e) => handleDisplayNameChange(e.target.value)}
+                  disabled={loading}
+                  className={displayNameError ? 'border-destructive focus-visible:ring-destructive' : ''}
+                  autoComplete="name"
+                />
+                {displayNameError && (
+                  <p className="text-sm text-destructive">{displayNameError}</p>
+                )}
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -122,6 +184,7 @@ export default function LoginPage() {
                 onChange={(e) => handleEmailChange(e.target.value)}
                 disabled={loading}
                 className={emailError ? 'border-destructive focus-visible:ring-destructive' : ''}
+                autoComplete="email"
               />
               {emailError && (
                 <p className="text-sm text-destructive">{emailError}</p>
@@ -139,6 +202,7 @@ export default function LoginPage() {
                   onChange={(e) => handlePasswordChange(e.target.value)}
                   disabled={loading}
                   className={passwordError ? 'border-destructive focus-visible:ring-destructive pr-10' : 'pr-10'}
+                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
                 />
                 <Button
                   type="button"
@@ -178,7 +242,14 @@ export default function LoginPage() {
         <Button
           variant="outline"
           className="w-full"
-          onClick={() => setIsSignUp(!isSignUp)}
+          onClick={() => {
+            setIsSignUp(!isSignUp)
+            // Clear errors and display name when switching
+            setEmailError('')
+            setPasswordError('')
+            setDisplayNameError('')
+            setDisplayName('')
+          }}
           type="button"
         >
           {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}

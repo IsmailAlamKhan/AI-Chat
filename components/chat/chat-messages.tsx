@@ -5,10 +5,10 @@ import { useStore } from '@/lib/store'
 import { ChatMessage } from './chat-message'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
-import { Loader2, ArrowDown } from 'lucide-react'
+import { Loader2, ArrowDown, Sparkles } from 'lucide-react'
 
 export function ChatMessages() {
-  const { messages, isLoading } = useStore()
+  const { messages, isLoading, isSummarizing, chats, currentChatId } = useStore()
   const bottomRef = useRef<HTMLDivElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -108,10 +108,24 @@ export function ChatMessages() {
   const lastMessage = messages[messages.length - 1]
   const showLoading = isLoading && lastMessage?.role === 'assistant' && !lastMessage?.content
 
+  // Get current chat summary info
+  const currentChat = chats.find(chat => chat.id === currentChatId)
+  const hasSummary = currentChat?.summary && currentChat?.messages_summarized
+
   return (
     <div className="relative h-full w-full">
       <ScrollArea ref={scrollAreaRef} className="h-full w-full">
         <div className="flex flex-col w-full max-w-full overflow-hidden">
+          {/* Summary info banner - only show when NOT summarizing */}
+          {hasSummary && !isSummarizing && (
+            <div className="sticky top-0 z-20 flex items-center gap-2 px-4 py-2 bg-blue-500/10 border-b border-blue-500/20 text-blue-400">
+              <Sparkles className="h-4 w-4" />
+              <span className="text-sm">
+                Earlier messages have been summarized ({currentChat.messages_summarized} messages)
+              </span>
+            </div>
+          )}
+          
           {messages.map((message, index) => {
             // Don't render empty assistant messages (they're placeholders)
             if (message.role === 'assistant' && !message.content) {
@@ -119,7 +133,22 @@ export function ChatMessages() {
             }
             return <ChatMessage key={message.id || index} message={message} index={index} />
           })}
-          {showLoading && (
+          
+          {/* Show summarizing indicator */}
+          {isSummarizing && (
+            <div className="flex gap-3 p-4 border-b bg-violet-500/5">
+              <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-md border bg-violet-500 text-white shadow">
+                AI
+              </div>
+              <div className="flex items-center gap-2 text-violet-400 pt-1">
+                <Sparkles className="h-4 w-4 animate-pulse" />
+                <span className="text-sm font-medium">Summarizing conversation...</span>
+              </div>
+            </div>
+          )}
+          
+          {/* Show AI thinking indicator */}
+          {showLoading && !isSummarizing && (
             <div className="flex gap-3 p-4 border-b bg-muted/30">
               <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-md border bg-primary text-primary-foreground shadow">
                 AI

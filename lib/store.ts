@@ -18,6 +18,10 @@ export interface Chat {
   title: string
   model?: string
   created_at: string
+  summary?: string
+  summary_up_to_message_id?: string
+  messages_summarized?: number
+  last_summarized_at?: string
 }
 
 export interface Settings {
@@ -39,6 +43,7 @@ interface ChatStore {
   currentChatId: string | null
   isLoading: boolean
   isTitleGenerating: boolean
+  isSummarizing: boolean
   settings: Settings
   selectedModel: string
 
@@ -48,6 +53,7 @@ interface ChatStore {
   setCurrentChatId: (id: string | null) => void
   setIsLoading: (loading: boolean) => void
   setIsTitleGenerating: (loading: boolean) => void
+  setIsSummarizing: (summarizing: boolean) => void
   setSettings: (settings: Partial<Settings>) => void
   setSelectedModel: (model: string) => void
   updateChatTitle: (chatId: string, title: string) => void
@@ -73,6 +79,7 @@ export const useStore = create<ChatStore>()(
       currentChatId: null,
       isLoading: false,
       isTitleGenerating: false,
+      isSummarizing: false,
       selectedModel: '',
       settings: {
         ollamaHost: '',
@@ -92,6 +99,7 @@ export const useStore = create<ChatStore>()(
       setCurrentChatId: (id) => set({ currentChatId: id }),
       setIsLoading: (loading) => set({ isLoading: loading }),
       setIsTitleGenerating: (loading) => set({ isTitleGenerating: loading }),
+      setIsSummarizing: (summarizing) => set({ isSummarizing: summarizing }),
       setSettings: (newSettings) =>
         set((state) => ({
           settings: { ...state.settings, ...newSettings },
@@ -142,15 +150,26 @@ export const useStore = create<ChatStore>()(
           return
         }
 
-        // Load chat to get the model
+        // Load chat to get the model and summary info
         const { data: chatData, error: chatError } = await supabase
           .from('chats')
-          .select('model')
+          .select('model, summary, messages_summarized')
           .eq('id', chatId)
           .single()
 
         if (chatError) {
           console.error('Error loading chat:', chatError)
+        }
+
+        // Update the chat in the chats array with latest summary info
+        if (chatData && (chatData.summary || chatData.messages_summarized)) {
+          set((state) => ({
+            chats: state.chats.map(chat => 
+              chat.id === chatId 
+                ? { ...chat, summary: chatData.summary, messages_summarized: chatData.messages_summarized }
+                : chat
+            )
+          }))
         }
 
         // Update messages, current chat, and selected model

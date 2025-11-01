@@ -16,6 +16,10 @@ interface ChatRequest {
   }
 }
 
+// Configuration for summarization
+const SUMMARIZATION_THRESHOLD = 20 // Summarize after this many messages
+const RECENT_MESSAGES_COUNT = 10 // Keep this many recent messages in context
+
 export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json()
@@ -57,11 +61,80 @@ export async function POST(request: NextRequest) {
       }])
     }
 
+    // Load chat metadata including summary
+    const { data: chatData } = await supabase
+      .from('chats')
+      .select('summary, summary_up_to_message_id, messages_summarized')
+      .eq('id', chatId)
+      .single()
+
+    // Determine if we should trigger summarization
+    const shouldSummarize = messages.length >= SUMMARIZATION_THRESHOLD && 
+                            messages.length > (chatData?.messages_summarized || 0) + SUMMARIZATION_THRESHOLD
+
+    // BLOCKING: Summarize first if needed before processing the message
+    if (shouldSummarize) {
+      console.log(`[SUMMARIZATION] Summarizing conversation before response (${messages.length} messages)`)
+      
+      try {
+        const summarizeResponse = await fetch(`${request.nextUrl.origin}/api/summarize`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cookie': request.headers.get('Cookie') || '',
+          },
+          body: JSON.stringify({
+            chatId,
+            messages: messages.slice(0, -RECENT_MESSAGES_COUNT), // Summarize all but recent
+            ollamaHost: settings.ollamaHost,
+            googleApiKey: settings.googleApiKey,
+            model,
+          }),
+        })
+
+        if (!summarizeResponse.ok) {
+          console.error('[SUMMARIZATION] Failed:', await summarizeResponse.text())
+        } else {
+          const summaryResult = await summarizeResponse.json()
+          console.log(`[SUMMARIZATION] Complete: ${summaryResult.messagesSummarized} messages summarized`)
+          
+          // Reload chat data to get the new summary
+          const { data: updatedChatData } = await supabase
+            .from('chats')
+            .select('summary, summary_up_to_message_id, messages_summarized')
+            .eq('id', chatId)
+            .single()
+          
+          if (updatedChatData) {
+            chatData.summary = updatedChatData.summary
+            chatData.messages_summarized = updatedChatData.messages_summarized
+          }
+        }
+      } catch (error) {
+        console.error('[SUMMARIZATION] Error:', error)
+        // Continue without summary if it fails
+      }
+    }
+
+    // Process messages with summarization
+    let contextMessages = messages
+    let summaryContext = ''
+
+    if (chatData?.summary && messages.length > RECENT_MESSAGES_COUNT) {
+      // Use summary for old messages + recent messages for context
+      summaryContext = `[Previous conversation summary: ${chatData.summary}]\n\n`
+      contextMessages = messages.slice(-RECENT_MESSAGES_COUNT)
+      console.log(`[SUMMARIZATION] Using summary + last ${RECENT_MESSAGES_COUNT} messages (${messages.length} total)`)
+    }
+
+    // Combine user context and summary context
+    const fullContext = summaryContext + userContext
+
     // Determine which provider to use
     if (model.startsWith('ollama/')) {
-      return await handleOllamaChat(messages, model.replace('ollama/', ''), settings, userContext)
+      return await handleOllamaChat(contextMessages, model.replace('ollama/', ''), settings, fullContext)
     } else if (model.startsWith('google/')) {
-      return await handleGoogleChat(messages, model.replace('google/', ''), settings, userContext)
+      return await handleGoogleChat(contextMessages, model.replace('google/', ''), settings, fullContext)
     } else {
       return new Response('Invalid model provider', { status: 400 })
     }
