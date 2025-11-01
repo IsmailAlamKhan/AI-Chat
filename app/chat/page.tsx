@@ -9,25 +9,13 @@ import { ProfileDialog } from '@/components/profile-dialog'
 import { useStore } from '@/lib/store'
 
 export default function NewChatPage() {
-  const { setCurrentChatId, setMessages, loadChats } = useStore()
+  const { setCurrentChatId, setMessages } = useStore()
 
   useEffect(() => {
-    // Reset state for new chat
+    // Reset state for new chat (chats already loaded in layout)
     setCurrentChatId(null)
     setMessages([])
-    
-    // Reload chats to ensure sidebar is up to date
-    const loadUserChats = async () => {
-      const { createClient } = await import('@/lib/supabase')
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await loadChats(user.id)
-      }
-    }
-    
-    loadUserChats()
-  }, [setCurrentChatId, setMessages, loadChats])
+  }, [setCurrentChatId, setMessages])
 
   return (
     <div className="flex h-screen flex-col w-full max-w-full overflow-x-hidden">

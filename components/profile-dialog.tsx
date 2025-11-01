@@ -17,8 +17,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { createClient } from '@/lib/supabase'
+import { useStore } from '@/lib/store'
 
-interface UserProfile {
+interface LocalProfile {
   display_name?: string
   avatar_url?: string
   bio?: string
@@ -26,19 +27,21 @@ interface UserProfile {
 
 export function ProfileDialog() {
   const [open, setOpen] = useState(false)
-  const [profile, setProfile] = useState<UserProfile>({})
+  const [localProfile, setLocalProfile] = useState<LocalProfile>({})
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>('')
+  const { userProfile, updateUserProfile } = useStore()
 
+  // Load profile from Zustand store when dialog opens
   useEffect(() => {
     if (open) {
-      loadProfile()
+      loadProfileFromStore()
     }
-  }, [open])
+  }, [open, userProfile])
 
-  const loadProfile = async () => {
+  const loadProfileFromStore = async () => {
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -47,25 +50,14 @@ export function ProfileDialog() {
 
       setEmail(user.email || '')
 
-      // Load profile from database
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading profile:', error)
-        return
-      }
-
-      if (data) {
-        setProfile({
-          display_name: data.display_name || '',
-          avatar_url: data.avatar_url || '',
-          bio: data.bio || '',
+      // Use profile from Zustand store
+      if (userProfile) {
+        setLocalProfile({
+          display_name: userProfile.display_name || '',
+          avatar_url: userProfile.avatar_url || '',
+          bio: userProfile.bio || '',
         })
-        setPreviewUrl(data.avatar_url || '')
+        setPreviewUrl(userProfile.avatar_url || '')
       }
     } catch (error) {
       console.error('Error loading profile:', error)
@@ -96,7 +88,7 @@ export function ProfileDialog() {
         return
       }
 
-      let avatarUrl = profile.avatar_url
+      let avatarUrl = localProfile.avatar_url
 
       // Upload avatar if a new file was selected
       if (avatarFile) {
@@ -122,22 +114,12 @@ export function ProfileDialog() {
         avatarUrl = publicUrl
       }
 
-      // Upsert profile
-      const { error } = await supabase
-        .from('user_profiles')
-        .upsert(
-          {
-            user_id: user.id,
-            display_name: profile.display_name,
-            avatar_url: avatarUrl,
-            bio: profile.bio,
-          },
-          {
-            onConflict: 'user_id',
-          }
-        )
-
-      if (error) throw error
+      // Use Zustand store's updateUserProfile method
+      await updateUserProfile(user.id, {
+        display_name: localProfile.display_name,
+        avatar_url: avatarUrl,
+        bio: localProfile.bio,
+      })
 
       toast.success('Profile updated successfully!')
       setOpen(false)
@@ -170,7 +152,7 @@ export function ProfileDialog() {
             <Avatar className="h-24 w-24">
               <AvatarImage src={previewUrl} alt="Profile" />
               <AvatarFallback className="text-2xl">
-                {profile.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                {localProfile.display_name?.charAt(0)?.toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
             <div>
@@ -220,9 +202,9 @@ export function ProfileDialog() {
               id="display-name"
               type="text"
               placeholder="Enter your display name"
-              value={profile.display_name || ''}
+              value={localProfile.display_name || ''}
               onChange={(e) =>
-                setProfile({ ...profile, display_name: e.target.value })
+                setLocalProfile({ ...localProfile, display_name: e.target.value })
               }
             />
           </div>
@@ -233,9 +215,9 @@ export function ProfileDialog() {
             <Textarea
               id="bio"
               placeholder="Tell us about yourself..."
-              value={profile.bio || ''}
+              value={localProfile.bio || ''}
               onChange={(e) =>
-                setProfile({ ...profile, bio: e.target.value })
+                setLocalProfile({ ...localProfile, bio: e.target.value })
               }
               rows={4}
             />

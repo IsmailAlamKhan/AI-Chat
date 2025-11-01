@@ -36,6 +36,13 @@ export interface Settings {
   }
 }
 
+export interface UserProfile {
+  user_id: string
+  display_name: string
+  avatar_url?: string
+  bio?: string
+}
+
 interface ChatStore {
   // State
   chats: Chat[]
@@ -46,6 +53,7 @@ interface ChatStore {
   isSummarizing: boolean
   settings: Settings
   selectedModel: string
+  userProfile: UserProfile | null
 
   // Actions
   setChats: (chats: Chat[]) => void
@@ -56,6 +64,7 @@ interface ChatStore {
   setIsSummarizing: (summarizing: boolean) => void
   setSettings: (settings: Partial<Settings>) => void
   setSelectedModel: (model: string) => void
+  setUserProfile: (profile: UserProfile | null) => void
   updateChatTitle: (chatId: string, title: string) => void
   updateChatModel: (chatId: string, model: string) => void
   
@@ -68,6 +77,8 @@ interface ChatStore {
   deleteChat: (chatId: string) => Promise<void>
   loadUserPreferences: (userId: string) => Promise<void>
   saveUserPreferences: (userId: string) => Promise<void>
+  loadUserProfile: (userId: string) => Promise<void>
+  updateUserProfile: (userId: string, updates: Partial<Omit<UserProfile, 'user_id'>>) => Promise<void>
 }
 
 export const useStore = create<ChatStore>()(
@@ -81,6 +92,7 @@ export const useStore = create<ChatStore>()(
       isTitleGenerating: false,
       isSummarizing: false,
       selectedModel: '',
+      userProfile: null,
       settings: {
         ollamaHost: '',
         googleApiKey: '',
@@ -105,6 +117,7 @@ export const useStore = create<ChatStore>()(
           settings: { ...state.settings, ...newSettings },
         })),
       setSelectedModel: (model) => set({ selectedModel: model }),
+      setUserProfile: (profile) => set({ userProfile: profile }),
       updateChatTitle: (chatId, title) =>
         set((state) => ({
           chats: state.chats.map((chat) =>
@@ -315,12 +328,65 @@ export const useStore = create<ChatStore>()(
           throw error
         }
       },
+
+      loadUserProfile: async (userId: string) => {
+        const supabase = createClient()
+        
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single()
+
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+          console.error('Error loading user profile:', error)
+          return
+        }
+
+        if (data) {
+          set({
+            userProfile: {
+              user_id: data.user_id,
+              display_name: data.display_name,
+              avatar_url: data.avatar_url,
+              bio: data.bio,
+            },
+          })
+        }
+      },
+
+      updateUserProfile: async (userId: string, updates: Partial<Omit<UserProfile, 'user_id'>>) => {
+        const supabase = createClient()
+        
+        const { error } = await supabase
+          .from('user_profiles')
+          .upsert(
+            {
+              user_id: userId,
+              ...updates,
+            },
+            {
+              onConflict: 'user_id',
+            }
+          )
+
+        if (error) {
+          console.error('Error updating user profile:', error)
+          throw error
+        }
+
+        // Update local state
+        set((state) => ({
+          userProfile: state.userProfile ? { ...state.userProfile, ...updates } : null,
+        }))
+      },
     }),
     {
       name: 'chat-storage',
       partialize: (state) => ({
         settings: state.settings,
         selectedModel: state.selectedModel,
+        userProfile: state.userProfile,
       }),
     }
   )

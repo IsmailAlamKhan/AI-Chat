@@ -21,36 +21,10 @@ export function ChatMessage({ message, index }: ChatMessageProps) {
   const isUser = message.role === 'user'
   const [copiedMessage, setCopiedMessage] = useState(false)
   const [copiedCode, setCopiedCode] = useState<number | null>(null)
-  const [displayName, setDisplayName] = useState<string>('')
-  const { messages, setMessages, currentChatId } = useStore()
+  const { messages, setMessages, currentChatId, userProfile } = useStore()
 
-  // Load user's display name
-  useEffect(() => {
-    const loadDisplayName = async () => {
-      if (!isUser) return
-      
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        
-        if (!user) return
-
-        const { data } = await supabase
-          .from('user_profiles')
-          .select('display_name')
-          .eq('user_id', user.id)
-          .single()
-
-        if (data?.display_name) {
-          setDisplayName(data.display_name)
-        }
-      } catch (error) {
-        console.error('Error loading display name:', error)
-      }
-    }
-
-    loadDisplayName()
-  }, [isUser])
+  // Get display name from Zustand store
+  const displayName = userProfile?.display_name || ''
 
   const handleCopyMessage = async () => {
     await navigator.clipboard.writeText(message.content)

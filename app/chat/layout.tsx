@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { useStore } from '@/lib/store'
 import { ChatHistorySidebar } from '@/components/chat/chat-history-sidebar'
 
 export default function ChatLayout({
@@ -11,19 +12,28 @@ export default function ChatLayout({
   children: React.ReactNode
 }) {
   const router = useRouter()
+  const { loadUserPreferences, loadUserProfile, loadChats } = useStore()
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const initializeApp = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
         router.push('/login')
+        return
       }
+
+      // Load all user data in parallel (only once on mount)
+      await Promise.all([
+        loadUserPreferences(user.id),
+        loadUserProfile(user.id),
+        loadChats(user.id),
+      ])
     }
 
-    checkAuth()
-  }, [router])
+    initializeApp()
+  }, [router, loadUserPreferences, loadUserProfile, loadChats])
 
   return (
     <div className="flex h-screen">

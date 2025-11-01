@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface Message {
@@ -10,7 +10,7 @@ interface Message {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -76,27 +76,7 @@ Summary:`;
       }
     }
 
-    // Fallback to Google AI if Ollama failed or unavailable
-    if (!summary && googleApiKey) {
-      try {
-        const { GoogleGenerativeAI } = await import('@google/generative-ai');
-        const genAI = new GoogleGenerativeAI(googleApiKey);
-        const geminiModel = genAI.getGenerativeModel({
-          model: 'gemini-2.0-flash-exp',
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 500,
-          },
-        });
-
-        const result = await geminiModel.generateContent(summaryPrompt);
-        summary = result.response.text();
-      } catch (googleError) {
-        console.error('Google AI summarization failed:', googleError);
-      }
-    }
-
-    // Fallback: Create a simple extractive summary
+    // Fallback: Create a simple extractive summary if Ollama unavailable/failed
     if (!summary) {
       const userMessages = messages.filter((m: Message) => m.role === 'user');
       const topics = userMessages.slice(0, 5).map((m: Message) => m.content.slice(0, 100));
