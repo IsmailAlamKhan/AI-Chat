@@ -81,28 +81,19 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        // Sign up the user
-        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        // Sign up the user with display name in metadata
+        // The database trigger will automatically create the user profile
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              display_name: displayName.trim(),
+            }
+          }
         })
         
         if (signUpError) throw signUpError
-        
-        // Create user profile automatically
-        if (authData.user) {
-          const { error: profileError } = await supabase
-            .from('user_profiles')
-            .insert([{
-              user_id: authData.user.id,
-              display_name: displayName.trim(),
-            }])
-          
-          if (profileError) {
-            console.error('Error creating user profile:', profileError)
-            // Don't throw - the account is created, profile can be added later
-          }
-        }
         
         toast.success('Account created successfully!')
         router.push('/chat')
