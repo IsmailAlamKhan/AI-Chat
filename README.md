@@ -1,392 +1,312 @@
-# AI Chat UI
+<div align="center">
 
-A beautiful, modern, full-stack chat application built with Next.js, supporting both Ollama (local) and Google AI models. Features real-time streaming responses, multimodal support (text and images), and persistent chat history.
+# 💬 AI Chat
 
-## Features
+**A beautiful, full-stack AI chat application with multi-provider support, real-time streaming, and persistent history.**
 
-- 🔐 **User Authentication** - Full email/password authentication via Supabase
-- 👤 **User Profiles** - Customizable display name, avatar, and bio
-- 🤝 **Personalized AI** - AI knows your name and bio for contextual conversations
-- 💬 **Persistent Chat History** - All conversations saved to database with AI-generated titles
-- 🎨 **Beautiful Dark UI** - Modern, responsive design with shadcn/ui and Geist fonts
-- 🤖 **Multiple AI Providers**
-  - Local Ollama models (optional)
-  - Google AI (Gemini) models (optional)
-  - Dynamic model fetching from APIs
-- 👁️ **Vision Support** - Upload images to compatible models
-- ⚡ **Real-time Streaming** - See responses as they generate
-- 📝 **Markdown Rendering** - Full markdown with code syntax highlighting and wrapping
-- 📋 **Rich Message Actions** - Copy messages, delete conversations, copy code blocks
-- 📜 **Smart Scrolling** - Auto-scroll with manual control and "Go to latest" button
-- ⚙️ **Configurable Settings** - API validation, database persistence, temperature control
-- 🐳 **Docker Support** - Production and development Docker Compose configurations
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-local-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Tech Stack
+</div>
 
-- **Framework**: Next.js 15 (App Router)
-- **Language**: TypeScript
-- **Database & Auth**: Supabase (local instance)
-- **UI Components**: shadcn/ui with Tailwind CSS
-- **State Management**: Zustand
-- **Markdown**: react-markdown with rehype-highlight
+---
 
-## Prerequisites
+## Overview
 
-- Node.js 18+ and npm
-- Docker Desktop (for Supabase local)
-- [Ollama](https://ollama.ai/) (optional, for local models)
-- Google AI API key (optional, for Gemini models)
+AI Chat is a modern, production-ready chat interface built with **Next.js 16** and **React 19**. It supports both local AI models via [Ollama](https://ollama.com/) and cloud models via [Google AI (Gemini)](https://ai.google.dev/), all backed by a local **Supabase** instance for authentication, persistent chat history, and user profiles. Responses stream in real-time and the UI is crafted with **shadcn/ui** and Tailwind CSS for a clean, responsive dark-mode experience.
 
-## Getting Started
+---
 
-### 1. Install Dependencies
+## ✨ Features
 
-\`\`\`bash
-npm install
-\`\`\`
+### 🤖 AI & Models
+- **Dual Provider Support** — Connect to local Ollama models or Google Gemini models (both optional)
+- - **Dynamic Model Fetching** — Available models are fetched live from each provider's API
+  - - **Vision / Multimodal** — Upload images to compatible models (marked with an eye icon)
+    - - **Real-time Streaming** — Responses stream token-by-token as they are generated
+      - - **Personalized AI** — The AI is automatically injected with your display name and bio for contextual conversations
+        - - **AI-Generated Titles** — Chat titles are automatically created from your first message
+         
+          - ### 💾 Data & Authentication
+          - - **Full Auth** — Email/password sign-up and login via Supabase (email confirmation disabled in dev)
+            - - **Persistent History** — All chats and messages are saved to the database and synced via Zustand
+              - - **User Profiles** — Set a display name, avatar, and bio that carry into every conversation
+                - - **Per-User Settings** — Ollama host, Google API key, temperature, and safety settings are saved per user
+                 
+                  - ### 🎨 UI & UX
+                  - - **Beautiful Dark UI** — Modern design with Geist fonts and shadcn/ui components
+                    - - **Markdown Rendering** — Full markdown with syntax-highlighted, copy-able code blocks
+                      - - **Smart Scrolling** — Auto-scrolls to new messages; pauses when you scroll up; "Go to latest" button to resume
+                        - - **Rich Message Actions** — Copy messages, delete message pairs, copy code blocks inline
+                          - - **Model Badge** — Each conversation shows which model was used
+                           
+                            - ### ⚙️ Configuration & Deployment
+                            - - **Settings Dialog** — Configure providers, temperature, and safety settings with built-in API validation
+                              - - **Docker Support** — Production-ready `docker-compose.yml` included
 
-### 2. Start Supabase
+                              ---
 
-Make sure Docker Desktop is running, then:
+                              ## 🛠️ Tech Stack
 
-\`\`\`bash
-npx supabase start
-\`\`\`
+                              | Category | Technology |
+                              |---|---|
+                              | Framework | Next.js 16 (App Router) |
+                              | Language | TypeScript 5 |
+                              | Database & Auth | Supabase (local instance) |
+                              | UI Components | shadcn/ui + Tailwind CSS v4 |
+                              | State Management | Zustand v5 |
+                              | Markdown | react-markdown + rehype-highlight |
+                              | AI Providers | Ollama (local) · Google AI (Gemini) |
+                              | Notifications | Sonner |
 
-This will start a local Supabase instance. The credentials are already configured in `.env.local`.
+                              ---
 
-### 3. Run the Development Server
+                              ## 📋 Prerequisites
 
-\`\`\`bash
-npm run dev
-\`\`\`
+                              - **Node.js** 18+ and npm
+                              - - **Docker Desktop** (required for local Supabase)
+                                - - **Ollama** *(optional)* — for running local models
+                                  - - **Google AI API Key** *(optional)* — for Gemini models, available at [Google AI Studio](https://aistudio.google.com/)
+                                   
+                                    - ---
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+                                    ## 🚀 Getting Started
 
-### 4. Create an Account
+                                    ### 1. Clone the repository
 
-1. Click "Sign Up" on the login page
-2. Enter your email and password (min 6 characters)
-3. For local development, email confirmation is disabled - you'll be logged in immediately
+                                    ```bash
+                                    git clone https://github.com/IsmailAlamKhan/AI-Chat.git
+                                    cd AI-Chat
+                                    ```
 
-### 5. Set Up Your Profile (Optional)
+                                    ### 2. Install dependencies
 
-Click the profile icon to set:
-- **Display Name**: Your name shown in chats and passed to AI
-- **Avatar**: Upload a profile picture
-- **Bio**: Information about yourself for AI context
+                                    ```bash
+                                    npm install
+                                    ```
 
-### 6. Configure Settings
+                                    ### 3. Start Supabase
 
-Click the settings icon (⚙️) to configure:
+                                    Make sure **Docker Desktop** is running, then:
 
-- **Ollama Host URL**: (Optional) URL where Ollama is running
-- **Google AI API Key**: (Optional) Get yours from [Google AI Studio](https://aistudio.google.com/app/apikey)
-- **Temperature**: Control randomness (0.0 - 2.0)
-- **Safety Settings**: Configure Google AI content filtering
+                                    ```bash
+                                    npx supabase start
+                                    ```
 
-Settings are validated before saving and persisted to the database.
+                                    This spins up a local Supabase instance. The required credentials are pre-configured in `.env.local`.
 
-## Using the App
+                                    ### 4. Run the development server
 
-### Starting a Conversation
+                                    ```bash
+                                    npm run dev
+                                    ```
+
+                                    Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+                                    ### 5. Create an account
+
+                                    Click **Sign Up** on the login page and enter your email and password (minimum 6 characters). Email confirmation is disabled in local development — you will be logged in immediately.
+
+                                    ---
+
+                                    ## ⚙️ Configuration
+
+                                    ### Profile (Optional)
+
+                                    Click the **profile icon** to set:
+                                    - **Display Name** — Shown in chats and passed to the AI
+                                    - **Avatar** — Upload a profile picture
+                                    - - **Bio** — Context about yourself that the AI uses in conversations
+                                     
+                                      - ### Settings (⚙️ icon)
+                                     
+                                      - | Setting | Description |
+                                      - |---|---|
+                                      - | Ollama Host URL | URL of your running Ollama instance (e.g. `http://localhost:11434`) |
+                                      | Google AI API Key | Your key from [Google AI Studio](https://aistudio.google.com/) |
+| Temperature | Response randomness from `0.0` (focused) to `2.0` (creative) |
+| Safety Settings | Content filtering options for Google AI |
+
+Settings are validated against the provider APIs before saving.
+
+---
+
+## 🧭 Using the App
+
+### Starting a conversation
 
 1. Select a model from the dropdown (Ollama or Google AI)
-2. Type your message in the input box
-3. Press Enter or click the send button
-4. Watch the AI response stream in real-time
-5. Chat title is automatically generated from your first message
+2. 2. Type your message and press **Enter** or click the send button
+3. Watch the AI response stream in real-time
+4. 4. The chat title is automatically generated from your first message
+  
+   5. ### Using vision models
 
-### Using Vision Models
+   1. Select a model with the **eye icon** (vision-capable)
+   2. 2. Click the **paperclip icon** to attach an image
+   3. Add your text prompt and send
+  
+   4. ### Managing chats
+  
+   5. | Action | How |
+   6. |---|---|
+   7. | New Chat | Click **New Chat** in the sidebar |
+   8. | View history | Click any previous chat in the sidebar |
+   9. | Edit title | Hover over the chat title → click the **pencil icon** |
+   10. | Delete chat | Hover over the chat in the sidebar → click **delete** |
+   | Copy message | Hover over any message → click **copy** |
+   | Delete message pair | Hover over a message → click **delete** |
+   | Cancel generation | Click the **stop button** while the AI is responding |
 
-1. Select a vision-capable model (marked with eye icon)
-2. Click the paperclip icon to upload images
-3. Add your text prompt
-4. Send the message
+---
 
-### Managing Chats
+## 🗂️ Project Structure
 
-- **New Chat**: Click the "New Chat" button in the sidebar
-- **View History**: Click any previous chat in the sidebar
-- **Edit Title**: Hover over chat title and click pencil icon to edit
-- **Delete Chat**: Hover over chat in sidebar to reveal delete button
-- **Auto-save**: All messages are automatically saved to the database
-- **Model Badge**: See which model was used for each conversation
+```
+├── app/
+│   ├── (auth)/login/         # Authentication page
+│   ├── api/
+│   │   ├── chat/             # Streaming chat endpoint with user context injection
+│   │   ├── models/           # Dynamic model fetching from providers
+│   │   └── generate-title/   # AI-powered title generation
+│   ├── chat/
+│   │   ├── layout.tsx        # Chat layout with sidebar
+│   │   ├── page.tsx          # New chat page
+│   │   └── [chatId]/         # Existing chat page
+│   └── page.tsx              # Home (redirects to chat)
+├── components/
+│   ├── chat/                 # Chat UI components (input, messages, sidebar, etc.)
+│   ├── ui/                   # shadcn/ui primitives
+│   ├── settings-dialog.tsx   # Settings with live API validation
+│   └── profile-dialog.tsx    # User profile management
+├── lib/
+│   ├── models.ts             # Model type definitions
+│   ├── store.ts              # Zustand state (with DB sync)
+│   ├── supabase.ts           # Client-side Supabase
+│   ├── supabase-server.ts    # Server-side Supabase
+│   └── utils.ts              # Utility functions
+└── supabase/
+    └── migrations/           # Incremental DB schema migrations
+```
 
-### Message Actions
+---
 
-- **Copy Message**: Hover over any message to copy it
-- **Delete Message Pair**: Remove a question and its response
-- **Copy Code Block**: Click copy button on any code block
-- **Cancel Response**: Stop AI generation with the stop button
+## 🗄️ Database Schema
 
-### Scrolling
+**`chats`** — `id`, `user_id`, `title`, `model`, `created_at`
 
-- **Auto-scroll**: Automatically scrolls to new messages
-- **Manual Control**: Scroll up to read - auto-scroll pauses
-- **Go to Latest**: Click button to jump to newest message
+**`messages`** — `id`, `chat_id`, `user_id`, `role` (`user` | `assistant`), `content`, `attachments` (JSONB for images), `created_at`
 
-## Project Structure
+**`user_preferences`** — `user_id`, `ollama_host`, `google_api_key`, `temperature`, `safety_settings`, `selected_model`
 
-\`\`\`
-app/
-├── (auth)/
-│   └── login/page.tsx            # Authentication page
-├── api/
-│   ├── chat/route.ts             # Chat streaming with user context
-│   ├── models/route.ts           # Dynamic model fetching
-│   └── generate-title/route.ts  # AI title generation
-├── chat/
-│   ├── layout.tsx                # Chat layout with sidebar
-│   ├── page.tsx                  # New chat page
-│   └── [chatId]/page.tsx         # Existing chat page
-├── layout.tsx                    # Root layout (dark mode, fonts)
-└── page.tsx                      # Home page (redirects)
+**`user_profiles`** — `user_id`, `display_name`, `avatar_url`, `bio`, `created_at`
 
-components/
-├── chat/
-│   ├── chat-history-sidebar.tsx  # Chat list with delete
-│   ├── chat-input.tsx            # Input with cancel support
-│   ├── chat-message.tsx          # Message with copy/delete
-│   ├── chat-messages.tsx         # Smart scrolling list
-│   ├── model-badge.tsx           # Conversation model badge
-│   └── model-selector.tsx        # Model dropdown with tooltips
-├── ui/                           # shadcn/ui components
-├── settings-dialog.tsx           # Settings with validation
-└── profile-dialog.tsx            # User profile management
+**Storage:** `avatars` — public bucket for user profile pictures
 
-lib/
-├── models.ts                     # Model type definitions
-├── store.ts                      # Zustand state (with DB sync)
-├── supabase.ts                   # Client-side Supabase
-├── supabase-server.ts            # Server-side Supabase
-└── utils.ts                      # Helper functions
+---
 
-supabase/
-└── migrations/
-    ├── 0001_init.sql                  # Initial schema
-    ├── 0002_add_model_to_chats.sql    # Model per chat
-    ├── 0003_add_user_preferences.sql  # Settings persistence
-    ├── 0004_add_user_profiles.sql     # User profiles
-    └── 0005_setup_avatars_storage.sql # Avatar storage bucket
-\`\`\`
+## 🔌 API Reference
 
-## Database Schema
+### `GET /api/models`
 
-### chats
-- `id` (UUID, primary key)
-- `user_id` (UUID, foreign key to auth.users)
-- `title` (TEXT) - AI-generated
-- `model` (TEXT) - Model used for conversation
-- `created_at` (TIMESTAMPTZ)
+Fetches available models from configured providers.
 
-### messages
-- `id` (UUID, primary key)
-- `chat_id` (UUID, foreign key to chats)
-- `user_id` (UUID, foreign key to auth.users)
-- `role` (TEXT: 'user' or 'assistant')
-- `content` (TEXT)
-- `attachments` (JSONB) - Image data for vision models
-- `created_at` (TIMESTAMPTZ)
+| Query Param | Required | Description |
+|---|---|---|
+| `ollamaHost` | No | URL of Ollama instance |
+| `googleApiKey` | No | Google AI API key |
 
-### user_preferences
-- `id` (UUID, primary key)
-- `user_id` (UUID, foreign key to auth.users, unique)
-- `ollama_host` (TEXT)
-- `google_api_key` (TEXT)
-- `temperature` (REAL)
-- `safety_settings` (JSONB)
-- `selected_model` (TEXT)
+### `POST /api/chat`
 
-### user_profiles
-- `id` (UUID, primary key)
-- `user_id` (UUID, foreign key to auth.users, unique)
-- `display_name` (TEXT)
-- `avatar_url` (TEXT)
-- `bio` (TEXT)
-- `created_at` (TIMESTAMPTZ)
+Streams an AI response. Automatically loads and injects the user's profile context.
 
-### Storage Buckets
-- **avatars** - Public bucket for user profile pictures
-
-## API Endpoints
-
-### GET /api/models
-Dynamically fetches models from configured providers.
-
-**Query Parameters:**
-- `ollamaHost` - (Optional) URL of Ollama instance
-- `googleApiKey` - (Optional) Google AI API key
-
-**Response:**
-\`\`\`json
-{
-  "models": [
-    {
-      "id": "ollama/llama2",
-      "name": "llama2",
-      "provider": "ollama",
-      "vision": false
-    },
-    {
-      "id": "google/gemini-2.5-flash",
-      "name": "gemini-2.5-flash",
-      "provider": "google",
-      "vision": true
-    }
-  ]
-}
-\`\`\`
-
-### POST /api/chat
-Streams responses with user context injection.
-
-**Features:**
-- Loads user profile (name, bio) automatically
-- Injects user context into AI prompts
-- Logs stop reasons and token usage
-- Handles errors with notifications
-
-**Request Body:**
-\`\`\`json
+```json
 {
   "messages": [...],
-  "model": "google/gemini-1.5-pro",
+  "model": "google/gemini-2.5-flash",
   "chatId": "uuid",
   "settings": {
     "ollamaHost": "http://localhost:11434",
     "googleApiKey": "...",
-    "temperature": 0.7,
-    "safetySettings": {...}
+    "temperature": 0.7
   }
 }
-\`\`\`
+```
 
-**Response:** Server-Sent Events stream
+**Response:** Server-Sent Events (SSE) stream
 
-### POST /api/generate-title
-Generates chat titles from conversation content.
+### `POST /api/generate-title`
 
-**Request:**
-\`\`\`json
-{
-  "chatId": "uuid",
-  "model": "google/gemini-1.5-pro",
-  "message": "First message text..."
-}
-\`\`\`
+Generates a concise title for a chat from the first message.
 
-**Response:**
-\`\`\`json
-{
-  "title": "Discussion about quantum computing"
-}
-\`\`\`
+---
 
-## Environment Variables
-
-The `.env.local` file contains:
-
-\`\`\`env
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-key>
-SUPABASE_SERVICE_ROLE_KEY=<your-key>
-\`\`\`
-
-These are automatically configured when you run `npx supabase start`.
-
-## Development Commands
-
-\`\`\`bash
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Run linter
-npm run lint
-
-# Start Supabase
-npx supabase start
-
-# Stop Supabase
-npx supabase stop
-
-# Reset database (applies migrations)
-npx supabase db reset
-
-# View Supabase Studio
-# Open http://localhost:54323
-\`\`\`
-
-## Troubleshooting
-
-### Supabase won't start
-- Make sure Docker Desktop is running
-- Try: `npx supabase stop` then `npx supabase start`
-- Check Docker has enough resources allocated
-
-### Models not loading
-- **Ollama**: Check it's running with `ollama list`
-- **Google AI**: Ensure API key is valid
-- Both providers are optional - configure at least one
-- Settings are validated before saving
-
-### Authentication issues
-- Clear browser cookies and local storage
-- Reset Supabase: `npx supabase db reset`
-- Check Supabase is running: `npx supabase status`
-
-### Streaming not working
-- Check browser console for errors
-- Verify API endpoints are accessible
-- Ensure model format is correct (e.g., `ollama/llama2`, `google/gemini-1.5-pro`)
-- Check for unusual stop reasons in console logs
-
-### Scrolling issues
-- Auto-scroll only works when at bottom of chat
-- Scroll up manually to disable auto-scroll
-- Use "Go to latest" button to re-enable
-
-### Title not generating
-- First message creates the title automatically
-- Ollama models use API generation
-- Google models use smart text extraction
-- Edit manually with pencil icon if needed
-
-## Docker Deployment
-
-Simplified Docker setup with production build:
+## 🐳 Docker Deployment
 
 ```bash
-# Build and start
+# Build and start (production)
 docker-compose up --build
 
 # Access the app
 open http://localhost:3000
 ```
 
-This will:
-1. Build Next.js for production
-2. Start local Supabase with `npx supabase start`
-3. Run the production server
+This will build Next.js for production, start a local Supabase instance, and serve the app. For hot-reload development, running locally without Docker is recommended:
 
-For detailed Docker instructions, see `README.Docker.md`.
-
-**Note**: For development with hot reload, it's recommended to run locally without Docker:
 ```bash
 npx supabase start
 npm run dev
 ```
 
-## License
+See [README.Docker.md](README.Docker.md) for detailed Docker instructions.
 
-MIT
+---
 
-## Contributing
+## 🛠️ Development Commands
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+```bash
+npm run dev            # Start development server
+npm run build          # Build for production
+npm start              # Start production server
+npm run lint           # Run ESLint
+
+npx supabase start     # Start local Supabase
+npx supabase stop      # Stop local Supabase
+npx supabase db reset  # Reset DB and re-run all migrations
+# Supabase Studio → http://localhost:54323
+```
+
+---
+
+## 🩺 Troubleshooting
+
+**Supabase won't start** — Ensure Docker Desktop is running. Try `npx supabase stop` then `npx supabase start`. Check Docker has sufficient resources.
+
+**Models not loading** — For Ollama, verify it is running with `ollama list`. For Google AI, ensure your API key is valid. Both providers are optional; at least one must be configured.
+
+**Auth issues** — Clear browser cookies and local storage. Reset the database with `npx supabase db reset`. Confirm Supabase is running with `npx supabase status`.
+
+**Streaming not working** — Check the browser console for errors. Verify the model format is correct (e.g. `ollama/llama2` or `google/gemini-1.5-pro`).
+
+**Auto-scroll not working** — Auto-scroll only activates when you are at the bottom of the chat. Scroll up manually to pause it, and use the **"Go to latest"** button to resume.
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to open an issue or submit a pull request.
+
+---
+
+<div align="center">
+  Built with ❤️ using Next.js, Supabase, and shadcn/ui
+</div>div>
